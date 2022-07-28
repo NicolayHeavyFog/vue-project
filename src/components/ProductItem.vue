@@ -1,5 +1,5 @@
 <template>
-  <li class="catalog__item" v-for="(product, index) in products" :key="index">
+  <li class="catalog__item" >
       <a class="catalog__pic" href="#">
         <img :src="product.image" :srcset="product.imageHigh" :alt="product.item">
       </a>
@@ -42,6 +42,6 @@
 
 <script>
 export default {
-  props: ['products'],
+  props: ['product'],
 };
 </script>
