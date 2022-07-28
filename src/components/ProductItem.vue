@@ -42,6 +42,21 @@
 
 <script>
 export default {
-  props: ['product'],
+  props: {
+    product: {
+      require: true,
+      validator: (value) => {
+        const props = ['image', 'title', 'price'];
+        const propsObj = Object.getOwnPropertyNames(value);
+        if (props.length !== propsObj.length) return false;
+        // eslint-disable-next-line no-plusplus
+        for (let i = 0; i < props.length; i++) {
+          // eslint-disable-next-line valid-typeof
+          if (typeof value[props[i]] === undefined) return false;
+        }
+        return true;
+      },
+    },
+  },
 };
 </script>
