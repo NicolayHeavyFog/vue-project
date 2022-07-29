@@ -52,7 +52,7 @@ export default {
   },
   methods: {
     paginate(page) {
-      console.log(Boolean(page < this.pages), page, this.pages);
+      // console.log(Boolean(page < this.pages), page, this.pages);
       this.$emit('paginate', page);
     },
   },

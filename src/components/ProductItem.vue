@@ -17,7 +17,7 @@
       <ul class="colors colors--black">
         <li class="colors__item" v-for='colorItem in product.colorId' :key ='product.id * colorItem'>
           <label class="colors__label">
-            <input class="colors__radio sr-only" type="radio" :value="colorItem" @click='colorsItem.push(colorItem)'>
+            <input class="colors__radio sr-only" type="radio" :value="colorItem" @click='chooseСolor(colorItem)'>
             <span class="colors__value" :style="colorsPull.find(color => color.id === colorItem).hex">
             </span>
           </label>
@@ -32,7 +32,7 @@ import colors from '../data/colors';
 export default {
   data() {
     return {
-      colorsItem: [],
+      colorItem: null,
     };
   },
   props: {
@@ -49,6 +49,21 @@ export default {
         }
         return true;
       },
+    },
+  },
+  // model: {
+  //   event: 'chooseColor',
+  //   value: 'color',
+  // },
+  methods: {
+    // get colorItem() {
+    //   return this.colorItem;
+    // },
+    // set colorItem(value) {
+    //   this.colorItem = value;
+    // },
+    chooseColor(color) {
+      this.colorItem = color;
     },
   },
   computed: {
