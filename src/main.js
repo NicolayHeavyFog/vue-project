@@ -2,8 +2,8 @@
 import Vue from 'vue';
 import App from './App.vue';
 
-import { message, timeStamp, str } from './data';
-import alrt from './function';
+// import { message, timeStamp, str } from './data';
+// import alrt from './function';
 
 Vue.config.productionTip = false;
 
@@ -11,4 +11,4 @@ Vue.config.productionTip = false;
 new Vue({
   render: (h) => h(App),
 }).$mount('#app');
-alrt(message, timeStamp, str);
+// alrt(message, timeStamp, str);/

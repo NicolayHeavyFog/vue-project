@@ -16,5 +16,6 @@ module.exports = {
     // 'max-len': 'off',
     'max-len': ['error', { code: 350 }],
     'vuejs-accessibility/label-has-for': 'off',
+    'vue/no-deprecated-v-bind-sync': 'off',
   },
 };

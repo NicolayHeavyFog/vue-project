@@ -1,6 +1,6 @@
 <template>
   <ul class="catalog__list">
-    <ProductItem :product = 'product' v-for="(product, index) in products" :key="index"/>
+    <ProductItem :product = 'product' v-for="(product) in products" :key="product.id"/>
   </ul>
 </template>
 
@@ -13,7 +13,7 @@ export default {
     products: {
       require: true,
       validator: (value) => {
-        const props = ['image', 'title', 'price'];
+        const props = ['image', 'title', 'price', 'id', 'categoryId', 'colorId'];
         // eslint-disable-next-line no-plusplus
         for (let i = 0; i < value.length; i++) {
           const currentObj = value[i];
