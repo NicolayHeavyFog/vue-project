@@ -1,7 +1,7 @@
 <template>
   <ul class="catalog__list">
     <ProductItem :product = 'product' v-for="(product) in products" :key="product.id" :chosenProductColor="returnColor(product.id)"
-    @gotoPage="(pageName, pageParams) => $emit('gotoPage', pageName, pageParams)"
+
     @setColor="(color, productId) => saveColor(color, productId)"/>
   </ul>
 </template>

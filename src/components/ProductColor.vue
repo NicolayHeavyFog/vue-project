@@ -2,7 +2,7 @@
   <ul class="colors colors--black">
         <li class="colors__item" v-for='colorItemId in colorId' :key ='productId * colorItemId'>
           <label class="colors__label">
-            <input class="colors__radio sr-only" :checked='colorItemId === chosenProductColor' type="radio" :value="colorItemId"
+            <input class="colors__radio sr-only" :checked='colorItemId === color' type="radio" :value="colorItemId"
             @click="chooseColor(colorItemId); $emit('setColor', color)">
 
             <span class="colors__value" :style="colorsPull.find(color => color.id === colorItemId).hex">
@@ -31,6 +31,9 @@ export default {
     colorsPull() {
       return colors;
     },
+  },
+  created() {
+    if (this.chosenProductColor) this.color = this.chosenProductColor.color;
   },
 };
 </script>

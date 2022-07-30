@@ -18,5 +18,6 @@ module.exports = {
     'vuejs-accessibility/label-has-for': 'off',
     'vue/no-deprecated-v-bind-sync': 'off',
     'vuejs-accessibility/form-control-has-label': 'off',
+    'vue/no-deprecated-filter': 'off',
   },
 };
