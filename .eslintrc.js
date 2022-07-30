@@ -17,5 +17,6 @@ module.exports = {
     'max-len': ['error', { code: 350 }],
     'vuejs-accessibility/label-has-for': 'off',
     'vue/no-deprecated-v-bind-sync': 'off',
+    'vuejs-accessibility/form-control-has-label': 'off',
   },
 };

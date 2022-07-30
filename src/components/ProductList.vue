@@ -1,6 +1,8 @@
 <template>
   <ul class="catalog__list">
-    <ProductItem v-model='setColor' :product = 'product' v-for="(product) in products" :key="product.id"/>
+    <ProductItem :product = 'product' v-for="(product) in products" :key="product.id" :chosenProductColor="returnColor(product.id)"
+    @gotoPage="(pageName, pageParams) => $emit('gotoPage', pageName, pageParams)"
+    @setColor="(color, productId) => saveColor(color, productId)"/>
   </ul>
 </template>
 
@@ -31,9 +33,24 @@ export default {
   },
   data() {
     return {
-      setColor: null,
-      chooseColor: [],
+      chosenColor: [],
     };
   },
+  methods: {
+    saveColor(color, productId) {
+      let productColors = [];
+      productColors = this.chosenColor.filter((product) => product.id !== productId);
+
+      productColors.push({
+        id: productId,
+        color,
+      });
+      this.chosenColor = productColors;
+    },
+    returnColor(productId) {
+      return this.chosenColor.find((product) => product.id === productId);
+    },
+  },
+
 };
 </script>

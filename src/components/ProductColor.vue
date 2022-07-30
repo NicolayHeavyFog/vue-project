@@ -1,9 +1,11 @@
 <template>
   <ul class="colors colors--black">
-        <li class="colors__item" v-for='colorItem in colorId' :key ='productId * colorItem'>
+        <li class="colors__item" v-for='colorItemId in colorId' :key ='productId * colorItemId'>
           <label class="colors__label">
-            <input class="colors__radio sr-only" :checked='color === colorItem' type="radio" :value="colorItem" @click='chooseColor(colorItem)'>
-            <span class="colors__value" :style="colorsPull.find(color => color.id === colorItem).hex">
+            <input class="colors__radio sr-only" :checked='colorItemId === chosenProductColor' type="radio" :value="colorItemId"
+            @click="chooseColor(colorItemId); $emit('setColor', color)">
+
+            <span class="colors__value" :style="colorsPull.find(color => color.id === colorItemId).hex">
             </span>
           </label>
         </li>
@@ -14,20 +16,15 @@
 import colors from '../data/colors';
 
 export default {
-  props: ['productId', 'colorId'],
+  props: ['productId', 'colorId', 'chosenProductColor'],
   data() {
     return {
       color: null,
     };
   },
-  model: {
-    event: 'chooseColor',
-    value: 'color',
-  },
   methods: {
     chooseColor(color) {
       this.color = color;
-      this.$emit('chooseColor', color);
     },
   },
   computed: {
