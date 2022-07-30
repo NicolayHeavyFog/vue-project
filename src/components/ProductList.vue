@@ -1,6 +1,6 @@
 <template>
   <ul class="catalog__list">
-    <ProductItem :product = 'product' v-for="(product) in products" :key="product.id"/>
+    <ProductItem v-model='setColor' :product = 'product' v-for="(product) in products" :key="product.id"/>
   </ul>
 </template>
 
@@ -28,6 +28,12 @@ export default {
         return true;
       },
     },
+  },
+  data() {
+    return {
+      setColor: null,
+      chooseColor: [],
+    };
   },
 };
 </script>

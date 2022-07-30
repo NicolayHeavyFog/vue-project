@@ -14,25 +14,29 @@
         {{product.price}} ₽
       </span>
 
-      <ul class="colors colors--black">
+      <ProductColor v-model='chooseColor' :productId ='product.id' :colorId="product.colorId"/>
+      <!-- <ul class="colors colors--black">
         <li class="colors__item" v-for='colorItem in product.colorId' :key ='product.id * colorItem'>
           <label class="colors__label">
-            <input class="colors__radio sr-only" type="radio" :value="colorItem" @click='chooseСolor(colorItem)'>
+            <input class="colors__radio sr-only" type="radio" :value="colorItem" @click='chooseColor(colorItem, product.id)'>
             <span class="colors__value" :style="colorsPull.find(color => color.id === colorItem).hex">
             </span>
           </label>
         </li>
-      </ul>
+      </ul> -->
     </li>
 </template>
 
 <script>
-import colors from '../data/colors';
+// import colors from '../data/colors';
+import ProductColor from './ProductColor.vue';
 
 export default {
+  components: { ProductColor },
   data() {
     return {
-      colorItem: null,
+      productId: this.product.id,
+      chooseColor: null,
     };
   },
   props: {
@@ -51,25 +55,31 @@ export default {
       },
     },
   },
-  // model: {
-  //   event: 'chooseColor',
-  //   value: 'color',
-  // },
+  model: {
+    event: 'setColor',
+    value: 'item',
+  },
   methods: {
-    // get colorItem() {
-    //   return this.colorItem;
-    // },
-    // set colorItem(value) {
-    //   this.colorItem = value;
-    // },
-    chooseColor(color) {
-      this.colorItem = color;
+    setColor() {
+      const item = {
+        productId: this.productId,
+        color: this.chooseColor,
+      };
+      this.$emit('setColor', item);
     },
+  //   chooseColor(color, productId) {
+  //     this.item.color = color;
+  //     this.item.productId = productId;
+  //     this.$emit('chooseColor', this.item);
+  //   },
   },
   computed: {
-    colorsPull() {
-      return colors;
-    },
+    // colorsPull() {
+    //   return colors;
+    // },
+    // productId() {
+    //   return this.product.id;
+    // },
   },
 };
 </script>
