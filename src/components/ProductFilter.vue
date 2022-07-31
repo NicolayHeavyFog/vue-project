@@ -35,43 +35,6 @@
                   </span>
                 </label>
               </li>
-              <!-- <li class="colors__item">
-                <label class="colors__label">
-                  <input class="colors__radio sr-only" type="radio" name="color" value="#73B6EA" value="#FFBE15">
-                  <span class="colors__value" style="background-color: #FFBE15;">
-                  </span>
-                </label>
-              </li>
-              <li class="colors__item">
-                <label class="colors__label">
-                  <input class="colors__radio sr-only" type="radio" name="color" value="#939393">
-                  <span class="colors__value" style="background-color: #939393;">
-                </span></label>
-              </li>
-              <li class="colors__item">
-                <label class="colors__label">
-                  <input class="colors__radio sr-only" type="radio" name="color" value="#8BE000">
-                  <span class="colors__value" style="background-color: #8BE000;">
-                </span></label>
-              </li>
-              <li class="colors__item">
-                <label class="colors__label">
-                  <input class="colors__radio sr-only" type="radio" name="color" value="#FF6B00">
-                  <span class="colors__value" style="background-color: #FF6B00;">
-                </span></label>
-              </li>
-              <li class="colors__item">
-                <label class="colors__label">
-                  <input class="colors__radio sr-only" type="radio" name="color" value="#FFF">
-                  <span class="colors__value" style="background-color: #FFF;">
-                </span></label>
-              </li>
-              <li class="colors__item">
-                <label class="colors__label">
-                  <input class="colors__radio sr-only" type="radio" name="color" value="#000">
-                  <span class="colors__value" style="background-color: #000;">
-                </span></label>
-              </li> -->
             </ul>
           </fieldset>
 
@@ -150,7 +113,6 @@ import categories from '../data/categories';
 import colors from '../data/colors';
 
 export default {
-  // props: ['priceFrom', 'priceTo', 'categoryId'],
   props: {
     priceFrom: {
       type: Number,
@@ -206,30 +168,6 @@ export default {
     },
   },
   computed: {
-    // currentPriceFrom: {
-    //   get() {
-    //     return this.priceFrom;
-    //   },
-    //   set(value) {
-    //     return this.$emit('update:priceFrom', value);
-    //   },
-    // },
-    // currentPriceTo: {
-    //   get() {
-    //     return this.priceTo;
-    //   },
-    //   set(value) {
-    //     return this.$emit('update:priceTo', value);
-    //   },
-    // },
-    // currentCategoryId: {
-    //   get() {
-    //     return this.categoryId;
-    //   },
-    //   set(value) {
-    //     return this.$emit('update:categoryId', value);
-    //   },
-    // },
     categories() {
       return categories;
     },

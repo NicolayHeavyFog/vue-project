@@ -46,7 +46,7 @@ export default {
       }
 
       if (this.filterPriceTo > 0) {
-        filteredProducts = filteredProducts.filter((product) => product.price < this.filterPriceFrom);
+        filteredProducts = filteredProducts.filter((product) => product.price < this.filterPriceTo);
       }
 
       if (this.filterCategeryId) {
