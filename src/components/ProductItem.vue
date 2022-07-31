@@ -1,8 +1,8 @@
 <template>
   <li class="catalog__item" >
-      <a class="catalog__pic" href="#" @click.prevent="gotoPage('product', {id: product.id})">
+      <router-link class="catalog__pic" :to="{name: 'product', params: {id: product.id, color: chosenProductColor}}">
         <img :src="product.image" :srcset="product.imageHigh" :alt="product.item">
-      </a>
+      </router-link>
 
       <h3 class="catalog__title">
         <a href="#">
@@ -14,10 +14,11 @@
         {{product.price | numberFormat}} ₽
       </span>
 
-      <ProductColor @setColor="color => $emit('setColor', color, productId)"
-      :productId ='product.id'
-      :colorId="product.colorId"
-      :chosenProductColor="chosenProductColor"/>
+      <ProductColor @set-color="color => $emit('set-color', color, productId)"
+      :product-id ='product.id'
+      :color-id="product.colorId"
+      :chosen-product-color="chosenProductColor"
+      />
     </li>
 </template>
 
@@ -56,15 +57,18 @@ export default {
       require: false,
     },
   },
-  watch: {
-    productColor(value) {
-      this.color = value.color;
-    },
-  },
+  // watch: {
+  //   chosenProductColor(value) {
+  //     this.color = value.color;
+  //   },
+  // },
   methods: {
     gotoPage,
   },
   computed: {
+  },
+  created() {
+    if (this.chosenProductColor) this.color = this.chosenProductColor.color;
   },
 };
 </script>

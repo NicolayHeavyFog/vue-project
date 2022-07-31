@@ -1,8 +1,7 @@
 <template>
   <ul class="catalog__list">
-    <ProductItem :product = 'product' v-for="(product) in products" :key="product.id" :chosenProductColor="returnColor(product.id)"
-
-    @setColor="(color, productId) => saveColor(color, productId)"/>
+    <ProductItem :product = 'product' v-for="(product) in products" :key="product.id" :chosen-product-color="returnColor(product.id)"
+    @set-color="(color, productId) => saveColor(color, productId)"/>
   </ul>
 </template>
 
@@ -40,7 +39,6 @@ export default {
     saveColor(color, productId) {
       let productColors = [];
       productColors = this.chosenColor.filter((product) => product.id !== productId);
-
       productColors.push({
         id: productId,
         color,
