@@ -11,7 +11,7 @@
     </span>
 
     <div class="product__counter form__counter">
-      <button type="button" aria-label="Убрать один товар" @click.prevent="removeProduct(item.productId)">
+      <button type="button" aria-label="Убрать один товар" @click.prevent="removeProduct()">
         <svg width="10" height="10" fill="currentColor">
           <use xlink:href="#icon-minus"></use>
         </svg>
@@ -19,7 +19,7 @@
 
       <input type="text" v-model.number="amount" name="count">
 
-      <button type="button" aria-label="Добавить один товар" @click.prevent="addProduct(item.productId)">
+      <button type="button" aria-label="Добавить один товар"  @click.prevent="addProduct()">
         <svg width="10" height="10" fill="currentColor">
           <use xlink:href="#icon-plus"></use>
         </svg>
@@ -40,7 +40,7 @@
 
 <script>
 import numberFormat from '@/helpers/numberFormat';
-import { mapMutations } from 'vuex';
+import { mapActions } from 'vuex';
 
 export default {
   props: ['item'],
@@ -53,13 +53,21 @@ export default {
         return this.item.amount;
       },
       set(value) {
-        this.$store.commit('updateCartProductAmount', { productId: this.item.productId, amount: value });
+        this.updateCartProductAmount({ productId: this.item.productId, amount: value });
+        // this.$store.dispatch('updateCartProductAmount', { productId: this.item.productId, amount: value });
       },
     },
   },
   methods: {
-    ...mapMutations({ deleteProduct: 'deleteCartProduct', addProduct: 'addProduct', removeProduct: 'removeProduct' }),
+    // ...mapMutations({ deleteProduct: 'deleteCartProduct', addProduct: 'addProduct', removeProduct: 'removeProduct' }),
+    ...mapActions({ updateCartProductAmount: 'updateCartProductAmount', deleteProduct: 'deleteProduct' }),
 
+    addProduct() {
+      this.updateCartProductAmount({ productId: this.item.productId, amount: this.amount + 1 });
+    },
+    removeProduct() {
+      this.updateCartProductAmount({ productId: this.item.productId, amount: this.amount - 1 });
+    },
   },
 };
 </script>

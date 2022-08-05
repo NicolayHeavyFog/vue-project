@@ -1,6 +1,6 @@
 <template>
   <ul class="catalog__list">
-    <ProductItem :product = 'product' v-for="(product) in products" :key="product.id" :chosen-product-color="returnColor(product.id)"
+    <ProductItem :product = 'product' v-for="product in products" :key="product.id" :chosen-product-color="returnColor(product.id)"
     @set-color="(color, productId) => saveColor(color, productId)"/>
   </ul>
 </template>

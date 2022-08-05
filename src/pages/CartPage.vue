@@ -1,49 +1,63 @@
 <template>
-  <main class="content container">
-    <div class="content__top">
-      <ul class="breadcrumbs">
-        <li class="breadcrumbs__item">
-          <a class="breadcrumbs__link" href="index.html">
-            Каталог
-          </a>
-        </li>
-        <li class="breadcrumbs__item">
-          <a class="breadcrumbs__link">
-            Корзина
-          </a>
-        </li>
-      </ul>
-
-      <h1 class="content__title">
-        Корзина
-      </h1>
-      <span class="content__info">
-        {{this.typeProduct}} товара
-      </span>
-    </div>
-    <section class="cart">
-      <form class="cart__form form" action="#" method="POST">
-        <div class="cart__field">
-          <ul class="cart__list">
-            <CartItem v-for="item in products" :item="item" :key="item.productId"/>
-          </ul>
+  <div>
+    <main v-if="cartLoading">
+      <div class="loader-container">
+          <div class="loader">
+            <div class="loader__bar"></div>
+            <div class="loader__bar"></div>
+            <div class="loader__bar"></div>
+            <div class="loader__bar"></div>
+            <div class="loader__bar"></div>
+            <div class="loader__ball"></div>
+          </div>
         </div>
+    </main>
+    <main class="content container" v-else-if="!cartLoading">
+      <div class="content__top">
+        <ul class="breadcrumbs">
+          <li class="breadcrumbs__item">
+            <router-link class="breadcrumbs__link" :to="{name: 'main'}">
+              Каталог
+            </router-link>
+          </li>
+          <li class="breadcrumbs__item">
+            <a class="breadcrumbs__link">
+              Корзина
+            </a>
+          </li>
+        </ul>
 
-        <div class="cart__block">
-          <p class="cart__desc">
-            Мы&nbsp;посчитаем стоимость доставки на&nbsp;следующем этапе
-          </p>
-          <p class="cart__price">
-            Итого: <span>{{this.totalPrice | numberFormat}} ₽</span>
-          </p>
+        <h1 class="content__title">
+          Корзина
+        </h1>
+        <span class="content__info">
+          {{this.typeProductAmount}} товара
+        </span>
+      </div>
+      <section class="cart">
+        <form class="cart__form form" action="#" method="POST">
+          <div class="cart__field">
+            <ul class="cart__list">
+              <CartItem v-for="item in products" :item="item" :key="item.productId"/>
+            </ul>
+          </div>
 
-          <button class="cart__button button button--primery" type="submit">
-            Оформить заказ
-          </button>
-        </div>
-      </form>
-    </section>
- </main>
+          <div class="cart__block">
+            <p class="cart__desc">
+              Мы&nbsp;посчитаем стоимость доставки на&nbsp;следующем этапе
+            </p>
+            <p class="cart__price">
+              Итого: <span>{{this.totalPrice | numberFormat}} ₽</span>
+            </p>
+
+            <router-link tag="button" :to="{name: 'order'}" class="cart__button button button--primery" type="submit" :disabled="!typeProductAmount">
+              Оформить заказ
+            </router-link>
+          </div>
+        </form>
+      </section>
+  </main>
+ </div>
 </template>
 
 <script>
@@ -52,12 +66,211 @@ import { mapGetters } from 'vuex';
 import CartItem from '@/components/CartItem.vue';
 
 export default {
+  data() {
+    return {
+      // cartLoading: this.$store.state.cartLoading,
+    };
+  },
   filters: {
     numberFormat,
   },
   computed: {
-    ...mapGetters({ products: 'cartDetailProduct', totalPrice: 'cartTotalPrice', typeProduct: 'cartTotalTypeProduct' }),
+    ...mapGetters({ products: 'cartDetailProduct', totalPrice: 'cartTotalPrice', typeProductAmount: 'cartTotalTypeProduct' }),
+    cartLoading() {
+      return this.$store.state.cartLoading;
+    },
   },
   components: { CartItem },
+  // watch: {
+  //   '$store.state.cartLoading': {
+  //     handler() {
+  //       this.cartLoading = this.$store.state.cartLoading;
+  //     },
+  //   },
+  // },
 };
 </script>
+
+<style lang="scss" scoped>
+$bar-color: #272727;
+$ball-color: #272727;
+$bg-color: #fff;
+.loader {
+  position: relative;
+  width: 75px;
+  height: 100px;
+
+  &-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__bar {
+    position: absolute;
+    bottom: 0;
+    width: 10px;
+    height: 50%;
+    background: $bar-color;
+    transform-origin: center bottom;
+    box-shadow: 1px 1px 0 rgba(0,0,0,.2);
+
+    @for $i from 1 through 5 {
+       &:nth-child(#{$i}) {
+         left: ($i - 1) * 15px;
+         transform: scale(1,$i*.2);
+         animation: barUp#{$i} 4s infinite;
+        }
+    }
+
+  }
+
+  &__ball {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    background: $ball-color;
+    border-radius: 50%;
+    animation: ball 4s infinite;
+  }
+}
+
+@keyframes ball {
+  0% {
+    transform: translate(0, 0);
+  }
+  5% {
+    transform: translate(8px, -14px);
+  }
+  10% {
+    transform: translate(15px, -10px)
+  }
+  17% {
+    transform: translate(23px, -24px)
+  }
+  20% {
+    transform: translate(30px, -20px)
+  }
+  27% {
+    transform: translate(38px, -34px)
+  }
+  30% {
+    transform: translate(45px, -30px)
+  }
+  37% {
+    transform: translate(53px, -44px)
+  }
+  40% {
+    transform: translate(60px, -40px)
+  }
+  50% {
+    transform: translate(60px, 0)
+  }
+  57% {
+    transform: translate(53px, -14px)
+  }
+  60% {
+    transform: translate(45px, -10px)
+  }
+  67% {
+    transform: translate(37px, -24px)
+  }
+  70% {
+    transform: translate(30px, -20px)
+  }
+  77% {
+    transform: translate(22px, -34px)
+  }
+  80% {
+    transform: translate(15px, -30px)
+  }
+  87% {
+    transform: translate(7px, -44px)
+  }
+  90% {
+    transform: translate(0, -40px)
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes barUp1 {
+  0% {
+    transform: scale(1, .2);
+  }
+  40%{
+    transform: scale(1, .2);
+  }
+  50% {
+    transform: scale(1, 1);
+  }
+  90% {
+    transform: scale(1,1);
+  }
+  100% {
+    transform: scale(1,.2);
+  }
+}
+@keyframes barUp2 {
+  0% {
+    transform: scale(1, .4);
+  }
+  40% {
+    transform: scale(1, .4);
+  }
+  50% {
+    transform: scale(1, .8);
+  }
+  90% {
+    transform: scale(1, .8);
+  }
+  100% {
+    transform: scale(1, .4);
+  }
+}
+@keyframes barUp3 {
+  0% {
+    transform: scale(1, .6);
+  }
+  100% {
+    transform: scale(1, .6);
+  }
+}
+@keyframes barUp4 {
+  0% {
+    transform: scale(1, .8);
+  }
+  40% {
+    transform: scale(1, .8);
+  }
+  50% {
+    transform: scale(1, .4);
+  }
+  90% {
+    transform: scale(1, .4);
+  }
+  100% {
+    transform: scale(1, .8);
+  }
+}
+@keyframes barUp5 {
+  0% {
+    transform: scale(1, 1);
+  }
+  40% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1, .2);
+  }
+  90% {
+    transform: scale(1, .2);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+</style>

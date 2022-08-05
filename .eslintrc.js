@@ -19,5 +19,7 @@ module.exports = {
     'vue/no-deprecated-v-bind-sync': 'off',
     'vuejs-accessibility/form-control-has-label': 'off',
     'vue/no-deprecated-filter': 'off',
+    'no-return-assign': 'off',
+    'vue/no-deprecated-router-link-tag-prop': 'off',
   },
 };

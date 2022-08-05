@@ -1,11 +1,13 @@
 <template>
   <ul class="colors colors--black">
-        <li class="colors__item" v-for='colorItemId in colorId' :key ='productId * colorItemId'>
+        <li class="colors__item" v-for='currentColor in colorsPull' :key ='currentColor.id'>
           <label class="colors__label">
-            <input class="colors__radio sr-only" :checked='colorItemId === color' type="radio" :value="colorItemId"
-            @click="chooseColor(colorItemId)">
+            <input class="colors__radio sr-only" type="radio"
+            :checked='currentColor.id === color'
+            :value="currentColor.title"
+            @click="chooseColor(currentColor.id)">
 
-            <span class="colors__value" :style="colorsPull.find(color => color.id === colorItemId).hex">
+            <span class="colors__value" :style="currentStyle(currentColor.code)">
             </span>
           </label>
         </li>
@@ -13,10 +15,10 @@
 </template>
 
 <script>
-import colors from '../data/colors';
+// import colors from '../data/colors';
 
 export default {
-  props: ['productId', 'colorId', 'chosenProductColor'],
+  props: ['colors', 'chosenProductColor'],
   data() {
     return {
       color: null,
@@ -27,10 +29,13 @@ export default {
       this.color = color;
       this.$emit('set-color', color);
     },
+    currentStyle(code) { // где стоит мутировать данные, в отдельном методе как здесь?
+      return `background-color: ${code};`;
+    },
   },
-  computed: {
+  computed: { // или сразу при получении совершать замешивание с помощью map ....
     colorsPull() {
-      return colors;
+      return this.colors;
     },
   },
   created() {

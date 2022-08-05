@@ -1,5 +1,21 @@
 <template>
-  <main class="content container">
+<div>
+  <main class="content container" v-if="productLoading">
+    <div class="loader-container">
+      <div class="loader">
+        <div class="loader__bar"></div>
+        <div class="loader__bar"></div>
+        <div class="loader__bar"></div>
+        <div class="loader__bar"></div>
+        <div class="loader__bar"></div>
+        <div class="loader__ball"></div>
+      </div>
+    </div>
+  </main>
+  <main class="content container" v-else-if="!productData">
+    <div class="">Произошла ошибка... <button @click.prevent="loadProducts">Перезагрузить</button> </div>
+  </main>
+  <main class="content container" v-if="!productLoading">
     <div class="content__top">
       <ul class="breadcrumbs">
         <li class="breadcrumbs__item">
@@ -8,7 +24,7 @@
           </router-link>
         </li>
         <li class="breadcrumbs__item">
-          <router-link class="breadcrumbs__link" href="#" :to="{name: 'main'}">
+          <router-link class="breadcrumbs__link" :to="{name: 'main'}">
             {{category.title}}
           </router-link>
         </li>
@@ -42,15 +58,15 @@
               <legend class="form__legend">Цвет:</legend>
               <ul class="colors">
                 <li class="colors__item"
-                 v-for='colorItemId in product.colorId'
-                 :key ='product.id * colorItemId'>
+                 v-for='currentColor in colorsPull'
+                 :key ='product.id * currentColor.id'>
                   <label class="colors__label">
                     <input class="colors__radio sr-only" type="radio" name="color-item"
-                    :value="colorItemId"
-                    :checked="colorItemId === chosenColor"
-                    @click="chooseColor(colorItemId)"
+                    :value="currentColor.id"
+                    :checked="currentColor.id === chosenColor"
+                    @click="chooseColor(currentColor.id)"
                     v-model="color">
-                    <span class="colors__value" :style="colorsPull.find(color => color.id === colorItemId).hex">
+                    <span class="colors__value" :style="style(currentColor.code)">
                     </span>
                   </label>
                 </li>
@@ -105,10 +121,14 @@
                 </button>
               </div>
 
-              <button class="button button--primery" type="submit">
+              <button class="button button--primery" type="submit"
+              :disabled="productAddSending">
                 В корзину
               </button>
             </div>
+
+            <div v-show='productAdded'>Товар добавлен в корзину</div>
+            <div v-show='productAddSending'>Проиходит отправка этого товара в корзину</div>
           </form>
         </div>
       </div>
@@ -171,20 +191,30 @@
       </div>
     </section>
   </main>
+</div>
 </template>
 
 <script>
-import products from '@/data/products';
-import categories from '@/data/categories';
+// import products from '@/data/products';
+// import categories from '@/data/categories';
 import gotoPage from '@/helpers/gotoPage';
 import numberFormat from '@/helpers/numberFormat';
-import colors from '../data/colors';
+// import colors from '../data/colors';
+import axios from 'axios';
+import { API_BASE_URL } from '@/config';
+import { mapActions } from 'vuex';
 
 export default {
   data() {
     return {
       productAmount: 1,
       color: null,
+      productData: null,
+      productLoading: false,
+      productLoadingFailed: false,
+
+      productAdded: false,
+      productAddSending: false,
     };
   },
   filters: {
@@ -192,13 +222,16 @@ export default {
   },
   computed: {
     product() {
-      return products.find((product) => product.id === +this.$route.params.id);
+      const image = this.productData.image.file.url;
+      // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+      this.productData.image = image;
+      return this.productData;
     },
     category() {
-      return categories.find((category) => category.id === this.product.categoryId);
+      return this.product.category;
     },
     colorsPull() {
-      return colors;
+      return this.product.colors;
     },
     chosenColor() {
       if (this.$route.params.color) return +this.$route.params.color.color;
@@ -206,12 +239,32 @@ export default {
     },
   },
   methods: {
+    ...mapActions(['addProductToCart']),
     gotoPage,
     addToCart() {
-      this.$store.commit(
-        'addProductToCart',
-        { productId: this.product.id, amount: this.productAmount },
-      );
+      this.productAdded = false;
+      this.productAddSending = true;
+      this.addProductToCart({ productId: this.product.id, amount: this.productAmount })
+        .then(() => {
+          this.productAdded = true;
+          this.productAddSending = false;
+        });
+    },
+
+    loadProduct() {
+      console.log('loadProduct');
+      this.productLoading = true;
+      this.productLoadingFailed = false;
+      clearTimeout(this.loadProductsItem);
+      this.loadProductsItem = setTimeout(() => {
+        axios.get(`${API_BASE_URL}/api/products/${this.$route.params.id}`)
+          .then((response) => this.productData = response.data)
+          .catch(() => { this.productLoadingFailed = true; })
+          .then(() => { this.productLoading = false; });
+      }, 5000);
+    },
+    style(code) {
+      return `background-color: ${code};`;
     },
     chooseColor(color) {
       this.color = color;
@@ -220,5 +273,198 @@ export default {
   created() {
     this.color = this.chosenColor;
   },
+  watch: {
+    // eslint-disable-next-line object-shorthand
+    '$route.params.id': {
+      handler() {
+        this.loadProduct();
+      },
+      immediate: true,
+    },
+  },
 };
 </script>
+
+<style lang="scss" scoped>
+$bar-color: #272727;
+$ball-color: #272727;
+$bg-color: #fff;
+.loader {
+  position: relative;
+  width: 75px;
+  height: 100px;
+
+  &-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__bar {
+    position: absolute;
+    bottom: 0;
+    width: 10px;
+    height: 50%;
+    background: $bar-color;
+    transform-origin: center bottom;
+    box-shadow: 1px 1px 0 rgba(0,0,0,.2);
+
+    @for $i from 1 through 5 {
+       &:nth-child(#{$i}) {
+         left: ($i - 1) * 15px;
+         transform: scale(1,$i*.2);
+         animation: barUp#{$i} 4s infinite;
+        }
+    }
+
+  }
+
+  &__ball {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    background: $ball-color;
+    border-radius: 50%;
+    animation: ball 4s infinite;
+  }
+}
+
+@keyframes ball {
+  0% {
+    transform: translate(0, 0);
+  }
+  5% {
+    transform: translate(8px, -14px);
+  }
+  10% {
+    transform: translate(15px, -10px)
+  }
+  17% {
+    transform: translate(23px, -24px)
+  }
+  20% {
+    transform: translate(30px, -20px)
+  }
+  27% {
+    transform: translate(38px, -34px)
+  }
+  30% {
+    transform: translate(45px, -30px)
+  }
+  37% {
+    transform: translate(53px, -44px)
+  }
+  40% {
+    transform: translate(60px, -40px)
+  }
+  50% {
+    transform: translate(60px, 0)
+  }
+  57% {
+    transform: translate(53px, -14px)
+  }
+  60% {
+    transform: translate(45px, -10px)
+  }
+  67% {
+    transform: translate(37px, -24px)
+  }
+  70% {
+    transform: translate(30px, -20px)
+  }
+  77% {
+    transform: translate(22px, -34px)
+  }
+  80% {
+    transform: translate(15px, -30px)
+  }
+  87% {
+    transform: translate(7px, -44px)
+  }
+  90% {
+    transform: translate(0, -40px)
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes barUp1 {
+  0% {
+    transform: scale(1, .2);
+  }
+  40%{
+    transform: scale(1, .2);
+  }
+  50% {
+    transform: scale(1, 1);
+  }
+  90% {
+    transform: scale(1,1);
+  }
+  100% {
+    transform: scale(1,.2);
+  }
+}
+@keyframes barUp2 {
+  0% {
+    transform: scale(1, .4);
+  }
+  40% {
+    transform: scale(1, .4);
+  }
+  50% {
+    transform: scale(1, .8);
+  }
+  90% {
+    transform: scale(1, .8);
+  }
+  100% {
+    transform: scale(1, .4);
+  }
+}
+@keyframes barUp3 {
+  0% {
+    transform: scale(1, .6);
+  }
+  100% {
+    transform: scale(1, .6);
+  }
+}
+@keyframes barUp4 {
+  0% {
+    transform: scale(1, .8);
+  }
+  40% {
+    transform: scale(1, .8);
+  }
+  50% {
+    transform: scale(1, .4);
+  }
+  90% {
+    transform: scale(1, .4);
+  }
+  100% {
+    transform: scale(1, .8);
+  }
+}
+@keyframes barUp5 {
+  0% {
+    transform: scale(1, 1);
+  }
+  40% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1, .2);
+  }
+  90% {
+    transform: scale(1, .2);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+</style>

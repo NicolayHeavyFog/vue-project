@@ -15,8 +15,7 @@
       </span>
 
       <ProductColor @set-color="color => $emit('set-color', color, productId)"
-      :product-id ='product.id'
-      :color-id="product.colorId"
+      :colors="product.colors"
       :chosen-product-color="chosenProductColor"
       />
     </li>

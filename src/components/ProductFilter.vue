@@ -6,11 +6,13 @@
           <fieldset class="form__block">
             <legend class="form__legend">Цена</legend>
             <label class="form__label form__label--price">
-              <input class="form__input" type="text" name="min-price" v-model.number="currentPriceFrom">
+              <input class="form__input" type="text" name="min-price"
+              v-model.number="currentPriceFrom">
               <span class="form__value">От</span>
             </label>
             <label class="form__label form__label--price">
-              <input class="form__input" type="text" name="max-price" v-model.number="currentPriceTo">
+              <input class="form__input" type="text" name="max-price"
+               v-model.number="currentPriceTo">
               <span class="form__value">До</span>
             </label>
           </fieldset>
@@ -18,7 +20,8 @@
           <fieldset class="form__block">
             <legend class="form__legend">Категория</legend>
             <label class="form__label form__label--select">
-              <select class="form__select" type="text" name="category" v-model.number='currentCategoryId'>
+              <select class="form__select" type="text" name="category"
+              v-model.number='currentCategoryId'>
                 <option value="0">Все категории</option>
                 <option :value="category.id" v-for='category in categories' :key='category.id'>{{category.title}}</option>
               </select>
@@ -28,10 +31,14 @@
           <fieldset class="form__block">
             <legend class="form__legend">Цвет</legend>
             <ul class="colors">
-              <li class="colors__item" v-for = 'color in colors' :key='color.id'>
+              <li class="colors__item" v-for='currentColor in colors' :key='currentColor.id'>
                 <label class="colors__label">
-                  <input class="colors__radio sr-only" type="radio" name="color" :value='color.id' v-model.number='currentColorId'>
-                  <span class="colors__value" :style='color.hex'>
+                  <input class="colors__radio sr-only" type="radio"
+                  checked="false"
+                  :name="currentColor.title"
+                  :value='currentColor.id'
+                  v-model.number='currentColorId'>
+                  <span class="colors__value" :style='style(currentColor.code)'>
                   </span>
                 </label>
               </li>
@@ -109,8 +116,10 @@
 </template>
 
 <script>
-import categories from '../data/categories';
-import colors from '../data/colors';
+import axios from 'axios';
+import { API_BASE_URL } from '@/config';
+// import categories from '../data/categories';
+// import colors from '../data/colors';
 
 export default {
   props: {
@@ -151,6 +160,8 @@ export default {
       currentPriceTo: 0,
       currentCategoryId: 0,
       currentColorId: 0,
+      categoriesData: null,
+      colorsPull: null,
     };
   },
   methods: {
@@ -166,14 +177,29 @@ export default {
       this.$emit('update:categoryId', 0);
       this.$emit('update:colorId', 0);
     },
+    loadCategories() {
+      axios.get(`${API_BASE_URL}/api/productCategories`)
+        .then((response) => this.categoriesData = response.data);
+    },
+    loadColors() {
+      axios.get(`${API_BASE_URL}/api/colors`)
+        .then((response) => this.colorsPull = response.data);
+    },
+    style(code) {
+      return `background-color: ${code};`;
+    },
   },
   computed: {
     categories() {
-      return categories;
+      return this.categoriesData ? this.categoriesData.items : [];
     },
     colors() {
-      return colors;
+      return this.colorsPull ? this.colorsPull.items : [];
     },
+  },
+  created() {
+    this.loadCategories();
+    this.loadColors();
   },
 };
 </script>
