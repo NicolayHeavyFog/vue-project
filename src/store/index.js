@@ -147,22 +147,41 @@ export default new Vuex.Store({
         context.commit('syncCartProducts');
       });
     },
-    deleteProduct(context, productId) {
+    async deleteProduct(context, productId) {
       console.log(productId);
       console.log(context.state.userAccessKey);
-      context.commit('deleteCartProduct', productId);
 
-      return axios.delete(`${API_BASE_URL}/api/baskets/products`, {
-        productId,
-      }, {
-        params: {
-          userAccessKey: context.state.userAccessKey,
+      context.commit('deleteCartProduct', productId);
+      // await response.json()
+      await fetch(`${API_BASE_URL}/api/baskets/products?userAccessKey=${context.state.userAccessKey}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json;charset=utf-8',
         },
-      }).then((response) => {
-        context.commit('updateCartProductData', response.data.items);
+        body: JSON.stringify({ productId }),
+      }).then((r) => {
+        r.json().then((response) => {
+          console.log(response);
+          context.commit('updateCartProductData', response.items);
+        });
       }).catch(() => {
+        console.log('sync');
         context.commit('syncCartProducts');
       });
+
+    //   return axios.delete(`${API_BASE_URL}/api/baskets/products`, {
+    //     productId,
+    //   }, {
+    //     params: {
+    //       userAccessKey: context.state.userAccessKey,
+    //     },
+    //   }).then((response) => {
+    //     console.log(response);
+    //     context.commit('updateCartProductData', response.data.items);
+    //   }).catch((response) => {
+    //     console.log(response);
+    //     context.commit('syncCartProducts');
+    //   });
     },
   },
 
