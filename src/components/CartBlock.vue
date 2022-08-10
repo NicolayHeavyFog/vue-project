@@ -11,7 +11,7 @@
 
     <div class="cart__total">
       <p>Доставка: <b>500 ₽</b></p>
-      <p>Итого: <b>{{products.length}}</b> товара на сумму <b>{{totalPrice | numberFormat}} ₽</b></p>
+      <p>Итого: <b>{{totalAmount}}</b> товара на сумму <b>{{totalPrice | numberFormat}} ₽</b></p>
     </div>
 
     <button class="cart__button button button--primery" type="submit" :disabled="!typeProductAmount">
@@ -43,6 +43,9 @@ export default {
     },
     typeProductAmount() {
       return this.$store.getters.cartTotalTypeProduct;
+    },
+    totalAmount() {
+      return this.$store.getters.cartTotalAmount;
     },
     //  typeProductAmount: 'cartTotalTypeProduct'
   },

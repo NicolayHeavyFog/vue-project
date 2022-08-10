@@ -76,6 +76,9 @@ export default new Vuex.Store({
     cartTotalTypeProduct(state, getters) {
       return getters.cartDetailProduct.length;
     },
+    cartTotalAmount(state, getters) {
+      return getters.cartDetailProduct.reduce((acc, item) => item.amount + acc, 0);
+    },
     orderInfo(state) {
       return state.orderInfo;
     },
