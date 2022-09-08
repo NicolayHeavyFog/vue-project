@@ -1,5 +1,5 @@
 <template>
-  <main class="content container">
+  <main class="content container" ref="entireContent">
     <div class="content__top">
       <ul class="breadcrumbs">
         <li class="breadcrumbs__item">
@@ -23,12 +23,14 @@
         Корзина
       </h1>
       <span class="content__info">
-        {{typeProductAmount}} товара
+        {{cartTotalAmount}} {{declensionWord(cartTotalAmount)}}
       </span>
     </div>
 
     <section class="cart">
-      <form class="cart__form form" action="#" method="POST" @submit.prevent="order">
+      <form class="cart__form form" action="#"
+       method="POST"
+       @submit.prevent="order()">
         <div class="cart__field">
           <div class="cart__data">
 
@@ -67,39 +69,41 @@
           <div class="cart__options">
             <h3 class="cart__title">Доставка</h3>
             <ul class="cart__options options">
-              <li class="options__item">
+              <li class="options__item"
+              v-for="delivery of availableDeliveries"
+              :key="delivery.id">
                 <label class="options__label">
-                  <input class="options__radio sr-only" type="radio" name="delivery" value="0" checked="">
+                  <input class="options__radio sr-only"
+                  type="radio"
+                  name="delivery"
+                  :value="delivery.id"
+                  v-model="deliveryTypeId"
+                  >
                   <span class="options__value">
-                    Самовывоз <b>бесплатно</b>
-                  </span>
-                </label>
-              </li>
-              <li class="options__item">
-                <label class="options__label">
-                  <input class="options__radio sr-only" type="radio" name="delivery" value="500">
-                  <span class="options__value">
-                    Курьером <b>500 ₽</b>
+                    {{delivery.title}} <b>{{String(delivery.price) === '0' ? 'бесплатно' : `${numberFormat(delivery.price)} ₽`}}</b>
                   </span>
                 </label>
               </li>
             </ul>
 
-            <h3 class="cart__title">Оплата</h3>
+            <h3 class="cart__title" v-if="deliveryTypeId">Оплата</h3>
+
             <ul class="cart__options options">
-              <li class="options__item">
-                <label class="options__label">
-                  <input class="options__radio sr-only" type="radio" name="pay" value="card">
-                  <span class="options__value">
-                    Картой при получении
-                  </span>
-                </label>
+              <li class="options__item"
+              v-if="paymentLoading">
+                <BaseLoaderCircle class="cart__item--loading"/>
               </li>
-              <li class="options__item">
-                <label class="options__label">
-                  <input class="options__radio sr-only" type="radio" name="pay" value="cash">
+              <li class="options__item"
+              v-for="payment of availablePayments"
+              :key="payment.id">
+                <label class="options__label" v-if="!paymentLoading">
+                  <input class="options__radio sr-only"
+                   type="radio"
+                   name="pay"
+                   :value="payment.id"
+                   v-model="paymentTypeId">
                   <span class="options__value">
-                    Наличными при получении
+                    {{payment.title}}
                   </span>
                 </label>
               </li>
@@ -107,26 +111,20 @@
           </div>
         </div>
 
-        <CartBlock :products="products" :totalPrice="totalPrice"/>
-        <!-- <div class="cart__block">
-          <div class="lds-dual-ring" v-if="cartLoading"></div>
-          <ul class="cart__orders">
-            <li class="cart__order" v-for="currentProduct in products" :key="currentProduct.productId">
-              <h3>{{currentProduct.product.title}}</h3>
-              <b>{{currentProduct.product.price | numberFormat}} ₽</b>
-              <span>Артикул: {{currentProduct.product.id}}</span>
-            </li>
-          </ul>
+        <CartBlock
+        :shipping="shippingСost"
+        :offers="offers"
+        :total-price="totalPrice">
 
-          <div class="cart__total">
-            <p>Доставка: <b>500 ₽</b></p>
-            <p>Итого: <b>{{products.length}}</b> товара на сумму <b>{{totalPrice | numberFormat}} ₽</b></p>
-          </div>
-
-          <button class="cart__button button button--primery" type="submit">
+          <BaseButtonPrimary
+            class="cart__button"
+            type="submit"
+            :disabled="!cartTotalAmount || !paymentTypeId"
+          >
             Оформить заказ
-          </button>
-        </div> -->
+          </BaseButtonPrimary>
+        </CartBlock>
+
         <div class="cart__error form__error-block" v-if="formErrorMessage">
           <h4>Заявка не отправлена!</h4>
           <p>
@@ -146,27 +144,49 @@
 </template>
 
 <script>
+import BaseButtonPrimary from '@/components/BaseButtonPrimary.vue';
 import BaseFormText from '@/components/BaseFormText.vue';
 import BaseFormTextarea from '@/components/BaseFormTextarea.vue';
 import CartBlock from '@/components/CartBlock.vue';
 import { mapGetters } from 'vuex';
-import numberFormat from '@/helpers/numberFormat';
 import axios from 'axios';
 import { API_BASE_URL } from '@/config';
+import declensionWord from '@/helpers/declensionWord';
+import numberFormat from '@/helpers/numberFormat';
+import BaseLoaderCircle from '@/components/BaseLoaderCircle.vue';
+import { nextTick } from 'vue';
+import { animateTransitionFromTo, defaultTransitionAppear } from '@/animation/common';
 
 export default {
+  components: {
+    BaseFormText, BaseFormTextarea, CartBlock, BaseLoaderCircle, BaseButtonPrimary,
+  },
   data() {
     return {
       formData: {},
       formError: {},
       formErrorMessage: '',
       messageSuccessOrder: '',
+      availableDeliveries: [],
+      availablePayments: [],
+      deliveryTypeId: null,
+      paymentTypeId: null,
+      paymentLoading: false,
+      shippingСost: 0,
+      pathFrom: null,
     };
   },
-  filters: {
-    numberFormat,
+  computed: {
+    ...mapGetters({
+      offers: 'cartProductsData', totalPrice: 'cartTotalPrice', cartTotalAmount: 'cartTotalAmount',
+    }),
+    cartLoading() {
+      return this.$store.state.cartLoading;
+    },
   },
   methods: {
+    numberFormat,
+    declensionWord,
     order() {
       this.formError = {};
       this.formErrorMessage = '';
@@ -174,12 +194,15 @@ export default {
       axios
         .post(`${API_BASE_URL}/api/orders`, {
           ...this.formData,
+          paymentTypeId: this.paymentTypeId,
+          deliveryTypeId: this.deliveryTypeId,
         }, {
           params: {
             userAccessKey: this.$store.state.userAccessKey,
           },
         })
         .then((response) => {
+          console.log(response);
           this.messageSuccessOrder = 'Успешно';
           this.$store.commit('resetCart');
           this.$store.commit('updateOrderInfo', response.data);
@@ -190,15 +213,73 @@ export default {
           this.formErrorMessage = error.response.data.error.message;
         });
     },
+    deliveryType() {
+      // this.deliveryTypeId = null,
+      // this.paymentTypeId = null,
+      axios
+        .get(`${API_BASE_URL}/api/deliveries`)
+        .then((response) => {
+          console.log(response);
+          this.availableDeliveries = response.data;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+
   },
-  computed: {
-    ...mapGetters({
-      products: 'cartDetailProduct', totalPrice: 'cartTotalPrice', typeProductAmount: 'cartTotalTypeProduct',
-    }),
-    cartLoading() {
-      return this.$store.state.cartLoading;
+  watch: {
+    deliveryTypeId(value) {
+      this.paymentLoading = true;
+      axios
+        .get(
+          `${API_BASE_URL}/api/payments`,
+          {
+            params: {
+              deliveryTypeId: value,
+            },
+          },
+        )
+        .then((response) => {
+          this.availablePayments = response.data;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+      this.paymentTypeId = null;
+      this.paymentLoading = false;
+      const chosenDelivery = this.availableDeliveries.find((delivery) => delivery.id === value);
+      this.shippingСost = Number(chosenDelivery.price);
     },
   },
-  components: { BaseFormText, BaseFormTextarea, CartBlock },
+  created() {
+    this.deliveryType();
+  },
+  async mounted() {
+    await nextTick();
+    const { entireContent } = this.$refs;
+    console.log(this.pathFrom);
+
+    if (this.pathFrom === 'cart') {
+      animateTransitionFromTo(entireContent, { xFrom: 400, xTo: '0' }, true);
+    } else if (this.pathFrom === 'orderInfo') {
+      animateTransitionFromTo(entireContent, { xFrom: -400, xTo: '0' }, true);
+    } else {
+      defaultTransitionAppear(entireContent);
+    }
+  },
+  beforeRouteEnter(to, from, next) {
+    next((vm) => {
+      console.log(from.name);
+      // eslint-disable-next-line no-param-reassign
+      vm.pathFrom = from.name;
+    });
+  },
 };
 </script>
+
+<style>
+/* .cart__item--loading {
+
+} */
+</style>

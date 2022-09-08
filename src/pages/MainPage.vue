@@ -1,30 +1,75 @@
 <template>
-  <main class="content container">
-    <div class="content__top content__top--catalog">
-      <h1 class="content__title">
-        Каталог
-      </h1>
-      <span class="content__info">
-        152 товара
+  <main class="content container" ref="catalog">
+    <div class="content__top content__top--catalog" ref="titlePage">
+      <h1 class="content__title">Каталог</h1>
+      <span class="content__info content__info--hidden" v-if="!productsLoading">
+        {{ countProducts }} {{ declensionWord(countProducts) }}
       </span>
     </div>
 
     <div class="content__catalog">
-      <ProductFilter :price-from.sync='filterPriceFrom' :price-to.sync='filterPriceTo' :category-id.sync='filterCategeryId' :color-id.sync='filterColorId'/>
-      <section class="catalog" >
-        <div class="loader-container" v-if="productsLoading">
-          <div class="loader">
-            <div class="loader__bar"></div>
-            <div class="loader__bar"></div>
-            <div class="loader__bar"></div>
-            <div class="loader__bar"></div>
-            <div class="loader__bar"></div>
-            <div class="loader__ball"></div>
+      <aside class="filter" ref="entireFilter">
+        <ProductFilter
+          v-model:price-from="filterPriceFrom"
+          v-model:price-to="filterPriceTo"
+          v-model:category-id="filterCategeryId"
+          v-model:color-id="filterColorId"
+          v-model:category-entries="filterCategeryPropsEntries"
+          class="modal-test"
+        >
+          <div class="page-preferences" ref="pageHandler">
+            <span class="page-preferences__title">Количество товаров на странице</span>
+            <ul class="page-preferences__list">
+              <li class="page-preferences__item" v-for="(item, index) in [9, 18, 36]" :key="index">
+                <button
+                  class="button button--second page-preferences__button button__circle"
+                  @click.prevent="
+                    productsPerPage = item;
+                    buttonCircle($event, $refs[`circleButton${item}`]);
+                  "
+                >
+                  {{ item }}
+                  <span class="circle" :ref="`circleButton${item}`"></span>
+                </button>
+              </li>
+            </ul>
           </div>
+        </ProductFilter>
+      </aside>
+
+      <section class="catalog">
+        <BaseLoader
+          class="catalog__notification"
+          v-if="productsLoading"
+        />
+        <div
+          v-if="productsLoadingFailed"
+          class="catalog__notification"
+        >
+          Что-то пошло не так...
+          <BaseButtonPrimary
+            @click.prevent="loadProducts"
+          >
+            Перезагрузить
+          </BaseButtonPrimary>
         </div>
-        <div class="" v-if="productsLoadingFailed">Произошла ошибка... <button @click.prevent="loadProducts">Перезагрузить</button> </div>
-        <ProductList :products='products' v-if="productsOpened"/>
-        <BasePagination v-model='page' :count='countProducts' :per-page="productsPerPage"/>
+        <div
+          class="catalog__notification"
+          v-if="!countProducts && !productsLoading"
+        >
+          К сожалению, по вашему запросу ничего не найдено.
+        </div>
+        <ProductList
+          :products="products"
+          v-model:picture-load="pictureIsLoad"
+          v-if="productsOpened && countProducts"
+        />
+        <BasePagination
+          v-model="page"
+          :count="countProducts"
+          :per-page="productsPerPage"
+          v-if="productsOpened && countProducts"
+        />
       </section>
     </div>
   </main>
@@ -33,290 +78,249 @@
 <script>
 import ProductList from '@/components/ProductList.vue';
 import BasePagination from '@/components/BasePagination.vue';
-// import products from '@/data/products';
 import ProductFilter from '@/components/ProductFilter.vue';
+import BaseLoader from '@/components/BaseLoader.vue';
 import axios from 'axios';
 import { API_BASE_URL } from '@/config';
+import declensionWord from '@/helpers/declensionWord';
+import { buttonCircle } from '@/animation/bubblingCircle';
+import { animatePageHandler, animateTransitionMainToProduct } from '@/animation/mainPage';
+import { animateTransitionToCart } from '@/animation/common';
+import BaseButtonPrimary from '@/components/BaseButtonPrimary.vue';
 
 export default {
-  components: { ProductList, BasePagination, ProductFilter },
+  components: {
+    ProductList,
+    BasePagination,
+    ProductFilter,
+    BaseLoader,
+    BaseButtonPrimary,
+  },
   data() {
     return {
       filterPriceFrom: 0,
       filterPriceTo: 0,
       filterCategeryId: 0,
+      filterCategeryPropsEntries: {},
       filterColorId: 0,
       page: 1,
-      productsPerPage: 3,
+      productsPerPage: 9,
       productsData: null,
-      productsLoading: false,
+      productsLoading: true,
       productsLoadingFailed: false,
       productsOpened: true,
+      pictureIsLoad: false,
+      chosenProductId: null,
+      doUpdateProducts: false,
     };
   },
   computed: {
-    // filteredProducts() {
-
-    // let filteredProducts = products;
-    // if (this.filterPriceFrom > 0) {
-    //   filteredProducts = filteredProducts.filter((product) => product.price > this.filterPriceFrom);
-    // }
-    // if (this.filterPriceTo > 0) {
-    //   filteredProducts = filteredProducts.filter((product) => product.price < this.filterPriceTo);
-    // }
-    // if (this.filterCategeryId) {
-    //   filteredProducts = filteredProducts.filter((product) => product.categoryId === this.filterCategeryId);
-    // }
-    // if (this.filterColorId) {
-    //   filteredProducts = filteredProducts.filter((product) => product.colorId === this.filterColorId);
-    // }
-    // if (this.filterColorId) {
-    //   filteredProducts = filteredProducts.filter((product) => product.colorId.includes(this.filterColorId));
-    // }
-    // return filteredProducts;
-    // },
     products() {
       return this.productsData
         ? this.productsData.items.map((product) => ({
           ...product,
-          image: product.image.file.url,
+          image: product.preview.file.url,
         }))
         : [];
-      // const offset = (this.page - 1) * this.productsPerPage;
-      // return this.filteredProducts.slice(offset, offset + this.productsPerPage);
     },
     countProducts() {
-      // return this.filteredProducts.length;
       return this.productsData ? this.productsData.pagination.total : 0;
     },
   },
-  watch: {
-    page() {
-      this.loadProducts();
-    },
-    filterPriceFrom() {
-      this.loadProducts();
-    },
-    filterPriceTo() {
-      this.loadProducts();
-    },
-    filterCategeryId() {
-      this.loadProducts();
-    },
-    filterColorId() {
-      this.loadProducts();
-    },
-  },
   methods: {
+    buttonCircle,
+    declensionWord,
     loadProducts() {
       this.productsLoading = true;
       this.productsLoadingFailed = false;
       this.productsOpened = false;
-      clearTimeout(this.loadProductsItem);
-      this.loadProductsItem = setTimeout(() => {
-        axios.get(`${API_BASE_URL}/api/products`, {
+      const result = {};
+
+      if (Object.keys(this.filterCategeryPropsEntries).length !== 0) {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const [key, value] of Object.entries(this.filterCategeryPropsEntries)) {
+          const str = `props[${key}][]`;
+          value.forEach((item) => {
+            result[str] = item;
+          });
+        }
+      }
+      const requestFields = { ...result };
+      if (this.filterCategeryId) requestFields.categoryId = this.filterCategeryId;
+      if (this.filterPriceFrom) requestFields.minPrice = this.filterPriceFrom;
+      if (this.filterPriceTo) requestFields.maxPrice = this.filterPriceTo;
+      axios
+        .get(`${API_BASE_URL}/api/products`, {
           params: {
             page: this.page,
             limit: this.productsPerPage,
-            categoryId: this.filterCategeryId,
-            colorId: this.filterColorId,
-            minPrice: this.filterPriceFrom,
-            maxPrice: this.filterPriceTo,
+            ...requestFields,
           },
         })
-          .then((response) => this.productsData = response.data)
-          .catch(() => this.productsLoadingFailed = true)
-          .then(() => { this.productsLoading = false; this.productsOpened = true; });
-      }, 5000);
+        .then((response) => {
+          this.productsData = response.data;
+        })
+        .catch(() => (this.productsLoadingFailed = true))
+        .then(() => {
+          this.productsLoading = false;
+          this.productsOpened = true;
+          this.doUpdateProducts = false;
+        });
     },
+    animatePageHandler,
+  },
+  watch: {
+    page() {
+      // this.loadProducts();
+      this.doUpdateProducts = true;
+    },
+    filterPriceFrom() {
+      // this.loadProducts();
+      this.doUpdateProducts = true;
+    },
+    filterPriceTo() {
+      // this.loadProducts();
+      this.doUpdateProducts = true;
+    },
+    filterCategeryId() {
+      // this.loadProducts();
+      this.doUpdateProducts = true;
+    },
+    productsPerPage() {
+      // this.loadProducts();
+      this.doUpdateProducts = true;
+    },
+    filterCategeryPropsEntries: {
+      handler() {
+        // this.loadProducts();
+        this.doUpdateProducts = true;
+      },
+      deep: true,
+    },
+    filterColorId() {
+      // this.loadProducts();
+      this.doUpdateProducts = true;
+    },
+    doUpdateProducts(value) {
+      if (value) this.loadProducts();
+    },
+  },
+  beforeRouteLeave(to, from, next) {
+    const { catalog } = this.$refs;
 
+    if (to.name === 'cart') {
+      const cartIndicator = document.querySelector('.header__cart');
+      animateTransitionToCart(cartIndicator, catalog);
+      setTimeout(() => {
+        next();
+      }, 700);
+    }
+    if (to.name === 'product') {
+      animateTransitionMainToProduct(catalog);
+      setTimeout(() => {
+        next();
+      }, 400);
+    }
   },
   created() {
     this.loadProducts();
   },
+  mounted() {
+    const { pageHandler } = this.$refs;
+    this.animatePageHandler(pageHandler);
+  },
 };
 </script>
 
-<style lang="scss" scoped>
-$bar-color: #272727;
-$ball-color: #272727;
-$bg-color: #fff;
-.loader {
-  position: relative;
-  width: 75px;
-  height: 100px;
+<style scoped lang="scss">
 
-  &-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.catalog__notification {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  margin: auto;
+  justify-content: center;
+  align-items: center;
+  font-family: "PressStart";
+  font-size: 25px;
+  text-align: center;
+  line-height: 35px;
+}
+
+.content {
+  &__top {
+    overflow: hidden;
   }
 
-  &__bar {
-    position: absolute;
-    bottom: 0;
-    width: 10px;
-    height: 50%;
-    background: $bar-color;
-    transform-origin: center bottom;
-    box-shadow: 1px 1px 0 rgba(0,0,0,.2);
+  &__title {
+    overflow: hidden;
+  }
 
-    @for $i from 1 through 5 {
-       &:nth-child(#{$i}) {
-         left: ($i - 1) * 15px;
-         transform: scale(1,$i*.2);
-         animation: barUp#{$i} 4s infinite;
-        }
+  &__info {
+    transition: opacity 0.3s ease-in;
+
+    &-hidden {
+      opacity: 0;
     }
-
   }
+}
 
-  &__ball {
+.filter {
+  background-color: unset;
+  position: relative;
+  height: 100%;
+}
+
+.circle {
+  display: none;
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+}
+
+.button__circle {
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    z-index: 1000;
     position: absolute;
-    bottom: 10px;
+    content: "";
+    top: 0;
     left: 0;
-    width: 10px;
-    height: 10px;
-    background: $ball-color;
-    border-radius: 50%;
-    animation: ball 4s infinite;
+    right: 0;
+    bottom: 0;
+    display: block;
   }
 }
 
-@keyframes ball {
-  0% {
-    transform: translate(0, 0);
-  }
-  5% {
-    transform: translate(8px, -14px);
-  }
-  10% {
-    transform: translate(15px, -10px)
-  }
-  17% {
-    transform: translate(23px, -24px)
-  }
-  20% {
-    transform: translate(30px, -20px)
-  }
-  27% {
-    transform: translate(38px, -34px)
-  }
-  30% {
-    transform: translate(45px, -30px)
-  }
-  37% {
-    transform: translate(53px, -44px)
-  }
-  40% {
-    transform: translate(60px, -40px)
-  }
-  50% {
-    transform: translate(60px, 0)
-  }
-  57% {
-    transform: translate(53px, -14px)
-  }
-  60% {
-    transform: translate(45px, -10px)
-  }
-  67% {
-    transform: translate(37px, -24px)
-  }
-  70% {
-    transform: translate(30px, -20px)
-  }
-  77% {
-    transform: translate(22px, -34px)
-  }
-  80% {
-    transform: translate(15px, -30px)
-  }
-  87% {
-    transform: translate(7px, -44px)
-  }
-  90% {
-    transform: translate(0, -40px)
-  }
-  100% {
-    transform: translate(0, 0);
-  }
-}
+.page-preferences {
+  padding: 25px;
+  top: 70%;
+  position: sticky;
+  left: 0;
+  display: block;
+  width: 100%;
+  min-height: 80px;
+  background-color: #272727;
 
-@keyframes barUp1 {
-  0% {
-    transform: scale(1, .2);
+  &__title {
+    display: block;
+    font-family: "PressStart";
+    font-size: 16px;
+    border-bottom: 4px dashed #fff;
+    padding-bottom: 25px;
+    margin-bottom: 25px;
   }
-  40%{
-    transform: scale(1, .2);
-  }
-  50% {
-    transform: scale(1, 1);
-  }
-  90% {
-    transform: scale(1,1);
-  }
-  100% {
-    transform: scale(1,.2);
-  }
-}
-@keyframes barUp2 {
-  0% {
-    transform: scale(1, .4);
-  }
-  40% {
-    transform: scale(1, .4);
-  }
-  50% {
-    transform: scale(1, .8);
-  }
-  90% {
-    transform: scale(1, .8);
-  }
-  100% {
-    transform: scale(1, .4);
-  }
-}
-@keyframes barUp3 {
-  0% {
-    transform: scale(1, .6);
-  }
-  100% {
-    transform: scale(1, .6);
-  }
-}
-@keyframes barUp4 {
-  0% {
-    transform: scale(1, .8);
-  }
-  40% {
-    transform: scale(1, .8);
-  }
-  50% {
-    transform: scale(1, .4);
-  }
-  90% {
-    transform: scale(1, .4);
-  }
-  100% {
-    transform: scale(1, .8);
-  }
-}
-@keyframes barUp5 {
-  0% {
-    transform: scale(1, 1);
-  }
-  40% {
-    transform: scale(1, 1);
-  }
-  50% {
-    transform: scale(1, .2);
-  }
-  90% {
-    transform: scale(1, .2);
-  }
-  100% {
-    transform: scale(1, 1);
+
+  &__list {
+    list-style-type: none;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
   }
 }
 </style>

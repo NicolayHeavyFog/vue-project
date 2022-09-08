@@ -1,144 +1,220 @@
-import Vue from 'vue';
-import Vuex from 'vuex';
+import { createStore } from 'vuex';
 import axios from 'axios';
 import { API_BASE_URL } from '@/config';
 
-Vue.use(Vuex);
-
-export default new Vuex.Store({
+export default createStore({
   state: {
-    cartProducts: [],
     userAccessKey: null,
     cartProductsData: [],
     cartLoading: true,
+    cartUpdateItem: [],
+    cartError: {
+      textError: null,
+      status: false,
+    },
     orderInfo: null,
+    colors: [],
+    chosenOffers: [],
   },
   mutations: {
-    updateOrderInfo(state, orderInfo) {
-      state.orderInfo = orderInfo;
+    // App --------------------------------------------------------------
+
+    // initialization
+    updateUserAccessKey(state, accessKey) {
+      state.userAccessKey = accessKey;
     },
-    resetCart(state) {
-      state.cartProducts = [];
-      state.cartProductsData = [];
+
+    // switch status
+    changeStatusCartLoading(state, value) {
+      state.cartLoading = value;
     },
+
+    changeErrorCartLoading(state, value) {
+      state.cartError.textError = value.textError;
+      state.cartError.status = value.status;
+    },
+
+    changeStatusCartItem(state, value) {
+      const item = state.cartUpdateItem.find((i) => i.offerCartId === value.offerCartId);
+      if (value.status) {
+        if (item) item.status = value.status;
+        else {
+          state.cartUpdateItem.push({
+            offerCartId: value.offerCartId,
+            status: value.status,
+          });
+        }
+      } else {
+        // const item = state.cartUpdateItem.find((i) => i.offerCartId === value.offerCartId);
+        item.status = false;
+        // state.cartUpdateItem.offerCartId.findIndex((cartItem) => cartItem === value.offerCartId) = null;
+      }
+    },
+
+    // MainPage ----------------------------------------------------------
+
+    // ProductColor ------------------------------------------------------
+
+    addChosenOffers(state, value) {
+      // console.log(value);
+      let result = [];
+      result = state.chosenOffers.filter((product) => product.productId !== value.productId);
+      result.push({
+        productId: value.productId,
+        offer: value.offer,
+      });
+      state.chosenOffers = result;
+    },
+
+    addColors(state, value) {
+      state.colors = value;
+    },
+
+    //  ------------------------------------------------------
+
+    // initialization
+    // items - ответ с сервера для товаров в корзине
+    updateCartProductData(state, items) {
+      console.log(items);
+      state.cartProductsData = items.map((item) => ({
+        color: item.color.color,
+        productPrice: item.price,
+        offerPrice: item.productOffer.price,
+        amount: item.quantity,
+        productId: item.productOffer.product.id,
+        offerCartId: item.id,
+        offerId: item.productOffer.id,
+        image: item.productOffer.product.preview.file.url,
+        offerTitle: item.productOffer.title,
+        productProp: item.productOffer.propValues,
+      }));
+    },
+
+    // CartPage ----------------------------------------------------------
+    // Манипулирую объектом в ЛОКАЛЬНОМ хранилище
     updateCartProductAmount(state, { productId, amount }) {
-      const item = state.cartProducts.find((currentItem) => currentItem.productId === productId);
+      const item = state.cartProductsData.find((currentItem) => currentItem.productId === productId);
       if (item) {
         item.amount = amount;
       }
     },
-    deleteCartProduct(state, productId) {
-      state.cartProducts = state.cartProducts.filter((item) => item.productId !== productId);
+
+    // OrderPage ----------------------------------------------------------
+    resetCart(state) {
+      state.cartProductsData = [];
     },
-    // addProduct(state, productId) {
-    //   const item = state.cartProducts.find((currentItem) => currentItem.productId === productId);
-    //   if (item) item.amount += 1;
-    // },
-    // removeProduct(state, productId) {
-    //   const item = state.cartProducts.find((currentItem) => currentItem.productId === productId);
-    //   if (item) {
-    //     if (item.amount === 1) this.commit('deleteCartProduct', productId);
-    //     else item.amount -= 1;
-    //   }
-    // },
-    updateUserAccessKey(state, accessKey) {
-      state.userAccessKey = accessKey;
+
+    updateOrderInfo(state, orderInfo) {
+      state.orderInfo = orderInfo;
     },
-    updateCartProductData(state, items) {
-      state.cartProductsData = items;
-    },
-    syncCartProducts(state) {
-      state.cartProducts = state.cartProductsData.map((item) => ({
-        productId: item.product.id,
-        amount: item.quantity,
-      }));
-    },
-    changeStatusCartLoading(state, value) {
-      state.cartLoading = value;
-    },
+
   },
   getters: {
-    cartDetailProduct(state) {
-      return state.cartProducts.map((item) => {
-        const { product } = state.cartProductsData.find((p) => p.product.id === item.productId);
-        return {
-          ...item,
-          product: {
-            ...product,
-            image: product.image.file.url,
-          },
-        };
-      });
+
+    // ProductColor ------------------------------------------------------
+
+    colors(state) {
+      if (!state.colors) return [];
+      return state.colors;
     },
-    cartTotalPrice(state, getters) {
-      return getters.cartDetailProduct.reduce((acc, item) => (item.product.price * item.amount) + acc, 0);
+
+    // Product Property
+
+    chosenOffers(state) {
+      return state.chosenOffers;
     },
-    cartTotalTypeProduct(state, getters) {
-      return getters.cartDetailProduct.length;
+
+    // CartPage ----------------------------------------------------------
+
+    cartProductsData(state) {
+      // console.log(state.cartProductsData);
+      return state.cartProductsData;
     },
+
     cartTotalAmount(state, getters) {
-      return getters.cartDetailProduct.reduce((acc, item) => item.amount + acc, 0);
+      return getters.cartProductsData.reduce((acc, item) => item.amount + acc, 0);
     },
+
+    cartTotalPrice(state, getters) {
+      return getters.cartProductsData.reduce((acc, item) => (item.productPrice * item.amount) + acc, 0);
+    },
+
+    cartStatusError(state) {
+      return state.cartError;
+    },
+
+    cartItemLoading(state) {
+      return state.cartUpdateItem;
+    },
+
+    cartLoading(state) {
+      return state.cartLoading;
+    },
+
+    // OrderInfo ----------------------------------------------------------
+
     orderInfo(state) {
       return state.orderInfo;
     },
+
   },
   actions: {
-    loadOrderInfo(context, orderId) {
-      return axios.get(`${API_BASE_URL}/api/orders/${orderId}`, {
+    // initialization
+    loadCart(context) {
+      context.commit('changeStatusCartLoading', true);
+      return axios.get(`${API_BASE_URL}/api/baskets`, {
         params: {
           userAccessKey: context.state.userAccessKey,
-
         },
-      }).then((response) => {
-        context.commit('updateOrderInfo', response.data);
+      }).then((r) => {
+        if (!context.state.userAccessKey) {
+          localStorage.setItem('userAccessKey', r.data.user.accessKey);
+          context.commit('updateUserAccessKey', r.data.user.accessKey);
+        }
+        context.commit('updateCartProductData', r.data.items);
+        // context.commit('syncCartProducts');
+      }).then(() => {
+        context.commit('changeStatusCartLoading', false);
       });
     },
-    loadCart(context) {
-      let response;
-      context.commit('changeStatusCartLoading', true);
-      setTimeout(() => {
-        response = axios.get(`${API_BASE_URL}/api/baskets`, {
-          params: {
-            userAccessKey: context.state.userAccessKey,
-          },
-        })
-          .then((r) => {
-            if (!context.state.userAccessKey) {
-              localStorage.setItem('userAccessKey', r.data.user.accessKey);
-              context.commit('updateUserAccessKey', r.data.user.accessKey);
-            }
 
-            context.commit('updateCartProductData', r.data.items);
-            context.commit('syncCartProducts');
-          }).then(() => {
-            context.commit('changeStatusCartLoading', false);
-          });
-      }, 5000);
-      return response;
+    loadColors(context) {
+      return axios.get(`${API_BASE_URL}/api/colors`)
+        .then((response) => {
+          context.commit('addColors', response.data.items);
+        });
     },
-    addProductToCart(context, { productId, amount }) {
+
+    // ProductPage ------------------------------------------------------------
+
+    addProductToCart(context, { productId, chosenColor, amount }) {
       // eslint-disable-next-line no-promise-executor-return
-      return (new Promise((resolve) => setTimeout(resolve, 2000)))
+      return (new Promise((resolve) => setTimeout(resolve, 500)))
         .then(() => axios.post(`${API_BASE_URL}/api/baskets/products`, {
-          productId,
+          productOfferId: productId,
+          colorId: chosenColor,
           quantity: amount,
         }, {
           params: {
             userAccessKey: context.state.userAccessKey,
           },
         }).then((response) => {
-          console.log('addProductToCart');
           context.commit('updateCartProductData', response.data.items);
-          context.commit('syncCartProducts');
+          // context.commit('syncCartProducts');
+        }).catch(() => {
+          context.commit('changeErrorCartLoading', { textError: 'Товарное предложение не найдено', status: true });
         }));
     },
+
+    // CartPage ------------------------------------------------------------
+
     updateCartProductAmount(context, { productId, amount }) {
       if (amount < 1) { return 0; }
-      context.commit('updateCartProductAmount', { productId, amount });
+      // context.commit('changeStatusCartLoading', true);
 
+      context.commit('changeStatusCartItem', { status: true, offerCartId: productId });
       return axios.put(`${API_BASE_URL}/api/baskets/products`, {
-        productId,
+        basketItemId: productId,
         quantity: amount,
       }, {
         params: {
@@ -146,46 +222,43 @@ export default new Vuex.Store({
         },
       }).then((response) => {
         context.commit('updateCartProductData', response.data.items);
+        context.commit('changeStatusCartItem', { status: false, offerCartId: productId });
       }).catch(() => {
-        context.commit('syncCartProducts');
+        context.commit('changeStatusCartItem', { status: false, offerCartId: productId });
       });
     },
-    async deleteProduct(context, productId) {
-      console.log(productId);
-      console.log(context.state.userAccessKey);
 
-      context.commit('deleteCartProduct', productId);
-      // await response.json()
+    async deleteProduct(context, offerCartId) {
+      context.commit('changeStatusCartItem', { status: true, offerCartId });
       await fetch(`${API_BASE_URL}/api/baskets/products?userAccessKey=${context.state.userAccessKey}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json;charset=utf-8',
         },
-        body: JSON.stringify({ productId }),
+        body: JSON.stringify({ basketItemId: offerCartId }),
       }).then((r) => {
         r.json().then((response) => {
-          console.log(response);
           context.commit('updateCartProductData', response.items);
         });
       }).catch(() => {
-        console.log('sync');
-        context.commit('syncCartProducts');
+        context.commit('changeErrorCartLoading', { textError: true, status: 'Что-то пошло не так...' });
       });
-
-    //   return axios.delete(`${API_BASE_URL}/api/baskets/products`, {
-    //     productId,
-    //   }, {
-    //     params: {
-    //       userAccessKey: context.state.userAccessKey,
-    //     },
-    //   }).then((response) => {
-    //     console.log(response);
-    //     context.commit('updateCartProductData', response.data.items);
-    //   }).catch((response) => {
-    //     console.log(response);
-    //     context.commit('syncCartProducts');
-    //   });
+      context.commit('changeStatusCartItem', { status: false, offerCartId });
     },
+
+    loadOrderInfo(context, orderId) {
+      context.commit('changeStatusCartLoading', true);
+      return axios.get(`${API_BASE_URL}/api/orders/${orderId}`, {
+        params: {
+          userAccessKey: context.state.userAccessKey,
+        },
+      }).then((response) => {
+        console.log(response.data);
+        context.commit('updateOrderInfo', response.data);
+        context.commit('changeStatusCartLoading', false);
+      });
+    },
+
   },
 
 });

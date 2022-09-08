@@ -1,5 +1,6 @@
 <template>
-  <main class="content container">
+  <BaseLoader class="content" v-if="cartLoading"/>
+  <main class="content container" v-if="!cartLoading" ref="entireContent">
     <div class="content__top">
       <ul class="breadcrumbs">
         <li class="breadcrumbs__item">
@@ -80,28 +81,109 @@
           </ul>
         </div>
 
-        <!-- <CartBlock/> -->
+        <CartBlock
+        :shipping="shippingCost"
+        :offers="orderInfo.items"
+        :total-price="totalPrice + shippingCost">
+        </CartBlock>
       </form>
     </section>
   </main>
 </template>
 
 <script>
-// import CartBlock from '@/components/CartBlock.vue';
+import CartBlock from '@/components/CartBlock.vue';
+import BaseLoader from '@/components/BaseLoader.vue';
+import { nextTick } from 'vue';
+import { animateTransitionFromTo, defaultTransitionAppear } from '@/animation/common';
 
 export default {
+  components: { CartBlock, BaseLoader },
+  data() {
+    return {
+      pathFrom: null,
+    };
+  },
   computed: {
     orderInfo() {
-      if (this.$store.getters.orderInfo) return this.$store.getters.orderInfo;
-      return '';
+      const orderI = this.$store.getters.orderInfo;
+      if (orderI) {
+        return {
+          items: orderI.basket.items.map((order) => ({
+            offerId: order.productOffer.id,
+            offerTitle: order.productOffer.title,
+            offerPrice: order.productOffer.price,
+            productProp: [
+              {
+                value: order.productOffer.propValues[0].value,
+              },
+            ],
+            color: {
+              title: order.color.color.title,
+            },
+            amount: order.quantity,
+          })),
+          name: orderI.name,
+          email: orderI.email,
+          address: orderI.address,
+          paymentType: orderI.paymentType,
+          phone: orderI.phone,
+          status: orderI.status,
+          totalPrice: orderI.totalPrice,
+          deliveryType: orderI.deliveryType,
+        };
+      }
+      return {};
+    },
+    shippingCost() {
+      if (!this.orderInfo.deliveryType) return 0;
+      return Number(this.orderInfo.deliveryType.price);
+    },
+    totalPrice() {
+      if (!this.orderInfo.totalPrice) return 0;
+      return this.orderInfo.totalPrice;
+    },
+    cartLoading() {
+      return this.$store.getters.cartLoading;
     },
   },
   created() {
-    if (this.$store.state.orderInfo && this.$store.state.orderInfo.id === this.$route.params.id) {
-      return;
-    }
+    // if (this.$store.getters.orderInfo && this.$store.getters.orderInfo.id === this.$route.params.id) {
+    //   return;
+    // }
     this.$store.dispatch('loadOrderInfo', this.$route.params.id);
   },
-  // components: { CartBlock },
+  watch: {
+    cartLoading: {
+      async handler(value) {
+        if (!value) {
+          await nextTick();
+          const { entireContent } = this.$refs;
+          console.log(entireContent);
+          if (this.pathFrom === 'order') {
+            console.log('yes');
+            animateTransitionFromTo(entireContent, { xFrom: 400, xTo: '0' }, true);
+          } else {
+            defaultTransitionAppear(entireContent);
+          }
+        }
+      },
+      immediate: true,
+    },
+
+  },
+  beforeRouteEnter(to, from, next) {
+    next((vm) => {
+      console.log(from.name);
+      // eslint-disable-next-line no-param-reassign
+      vm.pathFrom = from.name;
+    });
+  },
 };
 </script>
+
+<style lang="scss" scoped>
+.content {
+  min-height: 1000px;
+}
+</style>

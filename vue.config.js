@@ -5,5 +5,5 @@
 // });
 
 module.exports = {
-  publicPath: '/vue-app/',
+  publicPath: '/build-vue-test/',
 };

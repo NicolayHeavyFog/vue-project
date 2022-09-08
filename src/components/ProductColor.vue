@@ -1,45 +1,72 @@
 <template>
   <ul class="colors colors--black">
-        <li class="colors__item" v-for='currentColor in colorsPull' :key ='currentColor.id'>
-          <label class="colors__label">
-            <input class="colors__radio sr-only" type="radio"
-            :checked='currentColor.id === color'
-            :value="currentColor.title"
-            @click="chooseColor(currentColor.id)">
+    <li class="colors__item"
+    v-for='item in availableSuggestions'
+    :key ='getCurrentColorOfSuggestion(item)'>
+      <label class="colors__label">
+        <input class="colors__radio sr-only" type="radio"
+        :checked='getCurrentColorOfSuggestion(item) === colorId'
+        :value="availableColors(getCurrentColorOfSuggestion(item))"
+        @click="chooseColor()"
+        v-model="colorId">
 
-            <span class="colors__value" :style="currentStyle(currentColor.code)">
-            </span>
-          </label>
-        </li>
-      </ul>
+        <span class="colors__value"
+        :style="doStyle(colorId.code)"
+        >
+        </span>
+
+      </label>
+    </li>
+  </ul>
 </template>
 
 <script>
-// import colors from '../data/colors';
+// import validateColors from '@/helpers/validatorColors';
 
 export default {
-  props: ['colors', 'chosenProductColor'],
+  props: {
+    offers: {
+      require: false,
+    },
+    productId: {
+      require: true,
+      type: Number,
+    },
+  },
   data() {
     return {
-      color: null,
+      colorId: { code: '#fff' },
     };
   },
-  methods: {
-    chooseColor(color) {
-      this.color = color;
-      this.$emit('set-color', color);
+  computed: {
+    availableSuggestions() {
+      return this.offers.map((offer) => ({
+        suggestion: offer.propValues,
+      }));
     },
-    currentStyle(code) { // где стоит мутировать данные, в отдельном методе как здесь?
-      return `background-color: ${code};`;
+    colors() {
+      return this.$store.getters.colors;
     },
   },
-  computed: { // или сразу при получении совершать замешивание с помощью map ....
-    colorsPull() {
-      return this.colors;
+  methods: {
+    chooseColor() {
+      this.$store.commit('addChosenColor', { colorId: this.colorId, productId: this.productId });
+    },
+    doStyle(code) { return `background-color: ${code};`; },
+    getCurrentColorOfSuggestion(currentSuggestion) {
+      return currentSuggestion.suggestion[0].value;
+    },
+    availableColors(colorName) {
+      // console.log(this.colors);
+      return this.colors.find((color) => color.title === colorName);
+      // return this.availableSuggestions().suggestion;
     },
   },
   created() {
-    if (this.chosenProductColor) this.color = this.chosenProductColor.color;
+    const p = this.$store.getters.chosenColor.find((product) => product.productId === this.productId);
+    if (p) {
+      this.colorId = p.colorId;
+    }
   },
 };
 </script>

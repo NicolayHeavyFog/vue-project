@@ -1,108 +1,86 @@
 <template>
-<div>
-  <main class="content container" v-if="productLoading">
-    <div class="loader-container">
-      <div class="loader">
-        <div class="loader__bar"></div>
-        <div class="loader__bar"></div>
-        <div class="loader__bar"></div>
-        <div class="loader__bar"></div>
-        <div class="loader__bar"></div>
-        <div class="loader__ball"></div>
-      </div>
+  <BaseLoader class="content container" v-if="productStatus.isLoading" />
+  <main class="content container" v-else-if="productStatus.isFailed">
+    <div class="">
+      Произошла ошибка... <button @click.prevent="loadProducts">Перезагрузить</button>
     </div>
   </main>
-  <main class="content container" v-else-if="!productData">
-    <div class="">Произошла ошибка... <button @click.prevent="loadProducts">Перезагрузить</button> </div>
-  </main>
-  <main class="content container" v-if="!productLoading">
-    <div class="content__top">
+  <main class="content container" ref="entireContent" v-if="!productStatus.isLoading">
+    <div class="content__top" ref="breadcrumbs">
       <ul class="breadcrumbs">
         <li class="breadcrumbs__item">
-          <router-link class="breadcrumbs__link" :to="{name: 'main'}">
-            Каталог
-          </router-link>
+          <router-link class="breadcrumbs__link" :to="{ name: 'main' }"> Каталог </router-link>
         </li>
         <li class="breadcrumbs__item">
-          <router-link class="breadcrumbs__link" :to="{name: 'main'}">
-            {{category.title}}
+          <router-link class="breadcrumbs__link" :to="{ name: 'main' }">
+            {{ category.title }}
           </router-link>
         </li>
         <li class="breadcrumbs__item">
           <a class="breadcrumbs__link">
-           {{product.title}}
+            {{ product.title }}
           </a>
         </li>
       </ul>
     </div>
 
-    <section class="item">
+    <section class="item" ref="cartBlock">
       <div class="item__pics pics">
         <div class="pics__wrapper">
-          <img width="570" height="570" :src="product.image" :alt="product.title">
+          <div style="width: 570px; height: 570px;" ref="loader">
+            <BaseLoaderCircle/>
+          </div>
+          <img width="570" height="570"
+          :src="product.image"
+          :alt="product.title"
+          ref="image"/>
         </div>
       </div>
 
       <div class="item__info">
-        <span class="item__code">Артикул: {{product.id}}</span>
+        <span class="item__code"
+          >Артикул: {{ currentOffer ? currentOffer.id : product.productId }}</span
+        >
         <h2 class="item__title">
-          {{product.title}}
+          {{ currentOffer ? currentOffer.title : product.title }}
+          {{ currentColorOffer ? currentColorOffer : "" }}
         </h2>
         <div class="item__form">
-          <form class="form" action="#" method="POST" @submit.prevent="addToCart">
+          <form
+            class="form"
+            action="#"
+            method="POST"
+            @submit.prevent="doAddToCart(currentOffer, currentColorOffer)"
+          >
             <b class="item__price">
-              {{product.price | numberFormat }} ₽
+              {{ currentOffer ? numberFormat(currentOffer.price) : product.pricePretty }} ₽
             </b>
 
             <fieldset class="form__block">
-              <legend class="form__legend">Цвет:</legend>
-              <ul class="colors">
-                <li class="colors__item"
-                 v-for='currentColor in colorsPull'
-                 :key ='product.id * currentColor.id'>
-                  <label class="colors__label">
-                    <input class="colors__radio sr-only" type="radio" name="color-item"
-                    :value="currentColor.id"
-                    :checked="currentColor.id === chosenColor"
-                    @click="chooseColor(currentColor.id)"
-                    v-model="color">
-                    <span class="colors__value" :style="style(currentColor.code)">
-                    </span>
-                  </label>
-                </li>
-              </ul>
+              <legend class="form__legend">{{ propTitle }} (Обязательно)</legend>
+              <ProductProp
+                :available-params="availableParams"
+                :productId="product.productId"
+                :property="product.mainProp"
+                v-model:chosen-property="currentProperty"
+              />
             </fieldset>
 
             <fieldset class="form__block">
-              <legend class="form__legend">Объемб в ГБ:</legend>
-
-              <ul class="sizes sizes--primery">
-                <li class="sizes__item">
-                  <label class="sizes__label">
-                    <input class="sizes__radio sr-only" type="radio" name="sizes-item" value="32">
-                    <span class="sizes__value">
-                      32gb
-                    </span>
-                  </label>
-                </li>
-                <li class="sizes__item">
-                  <label class="sizes__label">
-                    <input class="sizes__radio sr-only" type="radio" name="sizes-item" value="64">
-                    <span class="sizes__value">
-                      64gb
-                    </span>
-                  </label>
-                </li>
-                <li class="sizes__item">
-                  <label class="sizes__label">
-                    <input class="sizes__radio sr-only" type="radio" name="sizes-item" value="128" checked="">
-                    <span class="sizes__value">
-                      128gb
-                    </span>
-                  </label>
-                </li>
-              </ul>
+              <!-- {{propTitle === 'Цвет' ? 'Дополнительный цвет' : 'Цвет (Обязательно)'}} -->
+              <legend class="form__legend">Цвет (Обязательно)</legend>
+              <ProductProp
+                :available-params="colorsOffer"
+                :productId="product.productId"
+                :property="'color'"
+                v-model:chosen-property="currentColorOffer"
+              />
             </fieldset>
+
+            <!-- <fieldset class="form__block">
+              <legend class="form__legend">Цвет: </legend>
+              <ProductProp :offers="product.offers" :productId="product.productId" :property="product.mainProp"/>
+            </fieldset> -->
 
             <div class="item__row">
               <div class="form__counter">
@@ -112,7 +90,7 @@
                   </svg>
                 </button>
 
-                <input type="text" v-model.number="productAmount">
+                <input type="text" v-model.number="productAmount" />
 
                 <button type="button" aria-label="Добавить один товар" @click="productAmount++">
                   <svg width="12" height="12" fill="currentColor">
@@ -120,15 +98,82 @@
                   </svg>
                 </button>
               </div>
-
-              <button class="button button--primery" type="submit"
-              :disabled="productAddSending">
+              <BaseButtonPrimary
+                type="submit"
+                :disabled="productStatus.addSending"
+              >
                 В корзину
-              </button>
+              </BaseButtonPrimary>
+              <!-- <button
+                class="button button--primery"
+                type="submit"
+                :disabled="productStatus.addSending"
+              >
+                В корзину
+              </button> -->
             </div>
 
-            <div v-show='productAdded'>Товар добавлен в корзину</div>
-            <div v-show='productAddSending'>Проиходит отправка этого товара в корзину</div>
+            <BaseNotification
+              :finish="addingStatus.added || addingStatus.error"
+              :loading="addingStatus.addSending"
+            >
+              <div class="notification-cart" v-if="addingStatus.added">
+                <svg
+                  width="50"
+                  height="50"
+                  xmlns="http://www.w3.org/2000/svg"
+                  xmlns:xlink="http://www.w3.org/1999/xlink"
+                  x="0px"
+                  y="0px"
+                  viewBox="0 0 50 50"
+                  style="enable-background: new 0 0 50 50"
+                  xml:space="preserve"
+                >
+                  <circle style="fill: #8be000" cx="25" cy="25" r="25" />
+                  <polyline
+                    style="
+                      fill: none;
+                      stroke: #272727;
+                      stroke-width: 2;
+                      stroke-linecap: round;
+                      stroke-linejoin: round;
+                      stroke-miterlimit: 10;
+                    "
+                    points="
+                    38,15 22,33 12,25 "
+                  />
+                </svg>
+                <span class="notification-cart__message">
+                  <span> Товар добавлен в корзину </span>
+                </span>
+                <router-link :to="{ name: 'cart' }" class="notification-cart__link"
+                  >Перейти в коризну</router-link
+                >
+              </div>
+              <div class="notification-cart" v-else-if="addingStatus.error">
+                <svg
+                  width="50"
+                  height="50"
+                  style="overflow: visible; enable-background: new 0 0 32 32"
+                  viewBox="0 0 32 32"
+                  xml:space="preserve"
+                  xmlns="http://www.w3.org/2000/svg"
+                  xmlns:xlink="http://www.w3.org/1999/xlink"
+                >
+                  <circle cx="16" cy="16" id="BG" r="16" style="fill: #d72828" />
+                  <path
+                    d="M14.5,25h3v-3h-3V25z M14.5,6v13h3V6H14.5z"
+                    id="Exclamatory_x5F_Sign"
+                    style="fill: #272727"
+                  />
+                </svg>
+                <span class="notification-cart__message">
+                  <span>
+                    {{ addingStatus.text }}
+                  </span>
+                </span>
+              </div>
+            </BaseNotification>
           </form>
         </div>
       </div>
@@ -136,335 +181,304 @@
       <div class="item__desc">
         <ul class="tabs">
           <li class="tabs__item">
-            <a class="tabs__link tabs__link--current">
+            <a
+              class="tabs__link"
+              href="#"
+              :class="{ 'tabs__link--current': tab === 'description' }"
+              @click.prevent="tab = 'description'"
+            >
               Описание
             </a>
           </li>
           <li class="tabs__item">
-            <a class="tabs__link" href="#">
+            <a
+              class="tabs__link"
+              href="#"
+              :class="{ 'tabs__link--current': tab === 'characteristics' }"
+              @click.prevent="tab = 'characteristics'"
+            >
               Характеристики
             </a>
           </li>
           <li class="tabs__item">
-            <a class="tabs__link" href="#">
+            <a
+              class="tabs__link"
+              href="#"
+              :class="{ 'tabs__link--current': tab === 'warranty' }"
+              @click.prevent="tab = 'warranty'"
+            >
               Гарантия
             </a>
           </li>
           <li class="tabs__item">
-            <a class="tabs__link" href="#">
+            <a
+              class="tabs__link"
+              href="#"
+              :class="{ 'tabs__link--current': tab === 'delivery' }"
+              @click.prevent="tab = 'delivery'"
+            >
               Оплата и доставка
             </a>
           </li>
         </ul>
+        <ul class="tabs__list">
+          <li class="item__content item__content--active"
+          ref="targetDescription"
+          >
+            <h3>{{ product.title }}</h3>
+            <p>Доступен в расцветках:</p>
 
-        <div class="item__content">
-          <p>
-            Навигация GPS, ГЛОНАСС, BEIDOU Galileo и QZSS<br>
-            Синхронизация со смартфоном<br>
-            Связь по Bluetooth Smart, ANT+ и Wi-Fi<br>
-            Поддержка сторонних приложений<br>
-          </p>
+            <ul>
+              <li v-for="offer in product.offers" :key="offer.id">
+                {{ offer.propValues[0].value }}
+              </li>
+            </ul>
 
-          <a href="#">
-            Все характеристики
-          </a>
+            <a href="#" @click.prevent="tab = 'characteristics'"> Все характеристики </a>
+          </li>
 
-          <h3>Что это?</h3>
-
-          <p>
-            Wahoo ELEMNT BOLT GPS – это велокомпьютер, который позволяет оптимизировать свои велотренировки, сделав их максимально эффективными.
-            Wahoo ELEMNT BOLT GPS синхронизируется с датчиками по ANT+, объединяя полученную с них информацию.
-            Данные отображаются на дисплее, а также сохраняются на смартфоне. При этом на мобильное устройство можно установить как фирменное приложение, так и различные приложения сторонних разработчиков.
-             Велокомпьютер точно отслеживает местоположение, принимая сигнал с целого комплекса спутников. Эта информация позволяет смотреть уже преодоленные маршруты и планировать новые велопрогулки.
-          </p>
-
-          <h3>Дизайн</h3>
-
-          <p>
-            Велокомпьютер Wahoo ELEMNT BOLT очень компактный. Размеры устройства составляют всего 74,6 x 47,3 x 22,1 мм. что не превышает габариты смартфона.
-             Корпус гаджета выполнен из черного пластика. На обращенной к пользователю стороне расположен дисплей диагональю 56 мм.
-             На дисплей выводятся координаты и скорость, а также полученная со смартфона и синхронизированных датчиков информация: интенсивность, скорость вращения педалей, пульс и т.д.
-             (датчики не входят в комплект поставки). Корпус велокомпьютера имеет степень защиты от влаги IPX7. Это означает, что устройство не боится пыли,
-              а также выдерживает кратковременное (до 30 минут) погружение в воду на глубину не более 1 метра.
-          </p>
-        </div>
+          <li class="item__content"
+          ref="targetCharacteristics"
+          >
+            <ul>
+              <li v-for="specification in product.specifications" :key="specification.id">
+                {{ specification.title }} - {{ specification.value }}
+              </li>
+            </ul>
+          </li>
+          <li class="item__content"
+          ref="targetWarranty">
+            loremloremloremloremloremloremloremloremloremlorem
+          </li>
+          <li class="item__content"
+          ref="targetDelivery">
+            loremloremloremloremloremloremloremloremloremloremloremloremloremloremloremloremloremloremloremlorem
+          </li>
+        </ul>
       </div>
     </section>
   </main>
-</div>
 </template>
 
 <script>
-// import products from '@/data/products';
-// import categories from '@/data/categories';
-import gotoPage from '@/helpers/gotoPage';
 import numberFormat from '@/helpers/numberFormat';
-// import colors from '../data/colors';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config';
-import { mapActions } from 'vuex';
+import BaseLoader from '@/components/BaseLoader.vue';
+import BaseNotification from '@/components/BaseNotification.vue';
+import ProductProp from '@/components/ProductProp.vue';
+import BaseButtonPrimary from '@/components/BaseButtonPrimary.vue';
+import {
+  defineComponent, nextTick, onMounted, onUpdated, ref, watch,
+} from 'vue';
+import { onBeforeRouteLeave, useRoute } from 'vue-router';
+import useProduct from '@/hooks/useProduct';
+import useAddProduct from '@/hooks/useAddProduct';
+import useAddOffer from '@/hooks/useAddOffer';
+import useImplementationLoad from '@/hooks/useImplementationLoad';
+import { shake } from '@/animation/productPage';
+import BaseLoaderCircle from '@/components/BaseLoaderCircle.vue';
+import {
+  animateTransitionToCart, animateTransitionFromTo, defaultTransitionAppear, defaultFadeContent,
+} from '@/animation/common';
+import tabsSwiper from '@/animation/tabsSwiper';
 
-export default {
-  data() {
-    return {
-      productAmount: 1,
-      color: null,
-      productData: null,
-      productLoading: false,
-      productLoadingFailed: false,
-
-      productAdded: false,
-      productAddSending: false,
-    };
-  },
-  filters: {
-    numberFormat,
-  },
-  computed: {
-    product() {
-      const image = this.productData.image.file.url;
-      // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-      this.productData.image = image;
-      return this.productData;
-    },
-    category() {
-      return this.product.category;
-    },
-    colorsPull() {
-      return this.product.colors;
-    },
-    chosenColor() {
-      if (this.$route.params.color) return +this.$route.params.color.color;
-      return null;
-    },
+export default defineComponent({
+  components: {
+    BaseLoader, BaseNotification, ProductProp, BaseLoaderCircle, BaseButtonPrimary,
   },
   methods: {
-    ...mapActions(['addProductToCart']),
-    gotoPage,
-    addToCart() {
-      this.productAdded = false;
-      this.productAddSending = true;
-      this.addProductToCart({ productId: this.product.id, amount: this.productAmount })
-        .then(() => {
-          this.productAdded = true;
-          this.productAddSending = false;
-        });
-    },
+  },
+  // eslint-disable-next-line vue/no-setup-props-destructure
+  setup() {
+    const $route = useRoute();
+    const entireContent = ref(null);
+    const pathFrom = ref(null);
+    const breadcrumbs = ref(null);
+    const cartBlock = ref(null);
 
-    loadProduct() {
-      console.log('loadProduct');
-      this.productLoading = true;
-      this.productLoadingFailed = false;
-      clearTimeout(this.loadProductsItem);
-      this.loadProductsItem = setTimeout(() => {
-        axios.get(`${API_BASE_URL}/api/products/${this.$route.params.id}`)
-          .then((response) => this.productData = response.data)
-          .catch(() => { this.productLoadingFailed = true; })
-          .then(() => { this.productLoading = false; });
-      }, 5000);
-    },
-    style(code) {
-      return `background-color: ${code};`;
-    },
-    chooseColor(color) {
-      this.color = color;
-    },
+    const {
+      product, category, fetchProduct, status: productStatus,
+    } = useProduct();
+
+    fetchProduct($route.params.id);
+
+    const {
+      currentProperty,
+      currentColorOffer,
+      currentOffer,
+      propTitle,
+      colorsOffer,
+      availableParams,
+    } = useAddOffer(product);
+
+    const {
+      doAddToCart,
+      isShowAddedMessage,
+      status: addingStatus,
+      productAmount,
+    } = useAddProduct();
+
+    const {
+      tab,
+      targetDescription,
+      targetCharacteristics,
+      targetWarranty,
+      targetDelivery,
+      calculateTab,
+    } = tabsSwiper();
+
+    const {
+      image, loader, doImplementation,
+    } = useImplementationLoad();
+
+    onUpdated(() => {
+      calculateTab();
+    });
+
+    onMounted(() => {
+      if (pathFrom.value) {
+        if (pathFrom.value === 'main') animateTransitionFromTo(entireContent.value, { yFrom: 200, yTo: '0' }, true);
+        else if (pathFrom.value === 'cart') animateTransitionFromTo(entireContent.value, { xFrom: -200, xTo: '0' }, true);
+      } else defaultTransitionAppear(entireContent.value);
+    });
+
+    onBeforeRouteLeave((to, from, next) => {
+      if (to.name === 'cart') {
+        const cartIndicator = document.querySelector('.header__cart');
+        animateTransitionToCart(cartIndicator, entireContent.value);
+        setTimeout(() => {
+          next();
+        }, 700);
+      } else {
+        defaultFadeContent(entireContent.value);
+        setTimeout(() => {
+          next();
+        }, 400);
+      }
+    });
+
+    watch(productStatus, async () => {
+      if (!productStatus.isLoading) {
+        await nextTick();
+        if (pathFrom.value) {
+          if (pathFrom.value === 'main') animateTransitionFromTo(entireContent.value, { yFrom: 200, yTo: '0' }, true);
+          else if (pathFrom.value === 'cart') animateTransitionFromTo(entireContent.value, { xFrom: -200, xTo: '0' }, true);
+        } else defaultTransitionAppear(entireContent.value);
+        doImplementation();
+      }
+    }, { immediate: true, deep: true });
+
+    watch(addingStatus, () => {
+      console.log(addingStatus);
+      if (addingStatus.error) {
+        const props = document.querySelectorAll('.form__block');
+        shake(props);
+      }
+    }, { immediate: true, deep: true });
+
+    watch(productAmount, () => {
+      if (productAmount.value < 1) productAmount.value = 1;
+    });
+
+    return {
+      breadcrumbs,
+      cartBlock,
+      pathFrom,
+      productAmount,
+      entireContent,
+      currentProperty,
+      currentColorOffer,
+      productStatus,
+      addingStatus,
+      product,
+      category,
+      currentOffer,
+      propTitle,
+      colorsOffer,
+      image,
+      loader,
+      isShowAddedMessage,
+      doAddToCart,
+      numberFormat,
+      availableParams,
+      tab,
+      targetCharacteristics,
+      targetDescription,
+      targetWarranty,
+      targetDelivery,
+    };
   },
-  created() {
-    this.color = this.chosenColor;
+  beforeRouteEnter(to, from, next) {
+    next((vm) => {
+      // eslint-disable-next-line no-param-reassign
+      vm.pathFrom = from.name;
+    });
   },
-  watch: {
-    // eslint-disable-next-line object-shorthand
-    '$route.params.id': {
-      handler() {
-        this.loadProduct();
-      },
-      immediate: true,
-    },
-  },
-};
+});
 </script>
 
-<style lang="scss" scoped>
-$bar-color: #272727;
-$ball-color: #272727;
-$bg-color: #fff;
-.loader {
-  position: relative;
-  width: 75px;
-  height: 100px;
+<style scoped lang="scss">
+.content {
+  min-height: 1000px;
+}
 
-  &-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.notification-cart {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  min-height: 80px;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+
+  svg {
+    margin-bottom: 15px;
   }
 
-  &__bar {
-    position: absolute;
-    bottom: 0;
-    width: 10px;
-    height: 50%;
-    background: $bar-color;
-    transform-origin: center bottom;
-    box-shadow: 1px 1px 0 rgba(0,0,0,.2);
+  &__message {
+    // display: flex;
+    // align-items: center;
+    font-size: 22px;
+  }
 
-    @for $i from 1 through 5 {
-       &:nth-child(#{$i}) {
-         left: ($i - 1) * 15px;
-         transform: scale(1,$i*.2);
-         animation: barUp#{$i} 4s infinite;
-        }
+  &__link {
+    color: #8be000;
+    font-weight: 700;
+    border-bottom: 2px dashed transparent;
+    padding-top: 15px;
+
+    &:hover {
+      border-color: #8be000;
     }
-
-  }
-
-  &__ball {
-    position: absolute;
-    bottom: 10px;
-    left: 0;
-    width: 10px;
-    height: 10px;
-    background: $ball-color;
-    border-radius: 50%;
-    animation: ball 4s infinite;
   }
 }
 
-@keyframes ball {
-  0% {
-    transform: translate(0, 0);
-  }
-  5% {
-    transform: translate(8px, -14px);
-  }
-  10% {
-    transform: translate(15px, -10px)
-  }
-  17% {
-    transform: translate(23px, -24px)
-  }
-  20% {
-    transform: translate(30px, -20px)
-  }
-  27% {
-    transform: translate(38px, -34px)
-  }
-  30% {
-    transform: translate(45px, -30px)
-  }
-  37% {
-    transform: translate(53px, -44px)
-  }
-  40% {
-    transform: translate(60px, -40px)
-  }
-  50% {
-    transform: translate(60px, 0)
-  }
-  57% {
-    transform: translate(53px, -14px)
-  }
-  60% {
-    transform: translate(45px, -10px)
-  }
-  67% {
-    transform: translate(37px, -24px)
-  }
-  70% {
-    transform: translate(30px, -20px)
-  }
-  77% {
-    transform: translate(22px, -34px)
-  }
-  80% {
-    transform: translate(15px, -30px)
-  }
-  87% {
-    transform: translate(7px, -44px)
-  }
-  90% {
-    transform: translate(0, -40px)
-  }
-  100% {
-    transform: translate(0, 0);
+.tabs {
+  &__list {
+    min-height: 216px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
   }
 }
 
-@keyframes barUp1 {
-  0% {
-    transform: scale(1, .2);
+.item {
+  // &__desc {
+    // overflow: hidden;
+  // }
+  &__content {
+    display: none;
+    min-height: 216px;
+    min-width: 595px;
+    &--active {
+      display: block;
+    }
   }
-  40%{
-    transform: scale(1, .2);
-  }
-  50% {
-    transform: scale(1, 1);
-  }
-  90% {
-    transform: scale(1,1);
-  }
-  100% {
-    transform: scale(1,.2);
-  }
+
 }
-@keyframes barUp2 {
-  0% {
-    transform: scale(1, .4);
-  }
-  40% {
-    transform: scale(1, .4);
-  }
-  50% {
-    transform: scale(1, .8);
-  }
-  90% {
-    transform: scale(1, .8);
-  }
-  100% {
-    transform: scale(1, .4);
-  }
-}
-@keyframes barUp3 {
-  0% {
-    transform: scale(1, .6);
-  }
-  100% {
-    transform: scale(1, .6);
-  }
-}
-@keyframes barUp4 {
-  0% {
-    transform: scale(1, .8);
-  }
-  40% {
-    transform: scale(1, .8);
-  }
-  50% {
-    transform: scale(1, .4);
-  }
-  90% {
-    transform: scale(1, .4);
-  }
-  100% {
-    transform: scale(1, .8);
-  }
-}
-@keyframes barUp5 {
-  0% {
-    transform: scale(1, 1);
-  }
-  40% {
-    transform: scale(1, 1);
-  }
-  50% {
-    transform: scale(1, .2);
-  }
-  90% {
-    transform: scale(1, .2);
-  }
-  100% {
-    transform: scale(1, 1);
-  }
-}
+
+// .item__content--active {
+//   display: block;
+// }
 </style>
