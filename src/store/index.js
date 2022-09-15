@@ -1,6 +1,6 @@
-import { createStore } from 'vuex';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config';
+import { createStore } from "vuex";
+import axios from "axios";
+import { API_BASE_URL } from "@/config";
 
 export default createStore({
   state: {
@@ -93,7 +93,9 @@ export default createStore({
     // CartPage ----------------------------------------------------------
     // Манипулирую объектом в ЛОКАЛЬНОМ хранилище
     updateCartProductAmount(state, { productId, amount }) {
-      const item = state.cartProductsData.find((currentItem) => currentItem.productId === productId);
+      const item = state.cartProductsData.find(
+        (currentItem) => currentItem.productId === productId
+      );
       if (item) {
         item.amount = amount;
       }
@@ -107,10 +109,8 @@ export default createStore({
     updateOrderInfo(state, orderInfo) {
       state.orderInfo = orderInfo;
     },
-
   },
   getters: {
-
     // ProductColor ------------------------------------------------------
 
     colors(state) {
@@ -136,7 +136,10 @@ export default createStore({
     },
 
     cartTotalPrice(state, getters) {
-      return getters.cartProductsData.reduce((acc, item) => (item.productPrice * item.amount) + acc, 0);
+      return getters.cartProductsData.reduce(
+        (acc, item) => item.productPrice * item.amount + acc,
+        0
+      );
     },
 
     cartStatusError(state) {
@@ -156,109 +159,139 @@ export default createStore({
     orderInfo(state) {
       return state.orderInfo;
     },
-
   },
   actions: {
     // initialization
     loadCart(context) {
-      context.commit('changeStatusCartLoading', true);
-      return axios.get(`${API_BASE_URL}/api/baskets`, {
-        params: {
-          userAccessKey: context.state.userAccessKey,
-        },
-      }).then((r) => {
-        if (!context.state.userAccessKey) {
-          localStorage.setItem('userAccessKey', r.data.user.accessKey);
-          context.commit('updateUserAccessKey', r.data.user.accessKey);
-        }
-        context.commit('updateCartProductData', r.data.items);
-        // context.commit('syncCartProducts');
-      }).then(() => {
-        context.commit('changeStatusCartLoading', false);
-      });
+      context.commit("changeStatusCartLoading", true);
+      return axios
+        .get(`${API_BASE_URL}/api/baskets`, {
+          params: {
+            userAccessKey: context.state.userAccessKey,
+          },
+        })
+        .then((r) => {
+          console.log(context.state.userAccessKey);
+          if (!context.state.userAccessKey) {
+            localStorage.setItem("userAccessKey", r.data.user.accessKey);
+            context.commit("updateUserAccessKey", r.data.user.accessKey);
+          }
+          context.commit("updateCartProductData", r.data.items);
+          // context.commit('syncCartProducts');
+        })
+        .then(() => {
+          context.commit("changeStatusCartLoading", false);
+        });
     },
 
     loadColors(context) {
-      return axios.get(`${API_BASE_URL}/api/colors`)
-        .then((response) => {
-          context.commit('addColors', response.data.items);
-        });
+      return axios.get(`${API_BASE_URL}/api/colors`).then((response) => {
+        context.commit("addColors", response.data.items);
+      });
     },
 
     // ProductPage ------------------------------------------------------------
 
     addProductToCart(context, { productId, chosenColor, amount }) {
       // eslint-disable-next-line no-promise-executor-return
-      return (new Promise((resolve) => setTimeout(resolve, 500)))
-        .then(() => axios.post(`${API_BASE_URL}/api/baskets/products`, {
-          productOfferId: productId,
-          colorId: chosenColor,
-          quantity: amount,
-        }, {
-          params: {
-            userAccessKey: context.state.userAccessKey,
-          },
-        }).then((response) => {
-          context.commit('updateCartProductData', response.data.items);
-          // context.commit('syncCartProducts');
-        }).catch(() => {
-          context.commit('changeErrorCartLoading', { textError: 'Товарное предложение не найдено', status: true });
-        }));
+      return new Promise((resolve) => setTimeout(resolve, 500)).then(() =>
+        axios
+          .post(
+            `${API_BASE_URL}/api/baskets/products`,
+            {
+              productOfferId: productId,
+              colorId: chosenColor,
+              quantity: amount,
+            },
+            {
+              params: {
+                userAccessKey: context.state.userAccessKey,
+              },
+            }
+          )
+          .then((response) => {
+            context.commit("updateCartProductData", response.data.items);
+            // context.commit('syncCartProducts');
+          })
+          .catch(() => {
+            context.commit("changeErrorCartLoading", {
+              textError: "Товарное предложение не найдено",
+              status: true,
+            });
+          })
+      );
     },
 
     // CartPage ------------------------------------------------------------
 
     updateCartProductAmount(context, { productId, amount }) {
-      if (amount < 1) { return 0; }
+      if (amount < 1) {
+        return 0;
+      }
       // context.commit('changeStatusCartLoading', true);
 
-      context.commit('changeStatusCartItem', { status: true, offerCartId: productId });
-      return axios.put(`${API_BASE_URL}/api/baskets/products`, {
-        basketItemId: productId,
-        quantity: amount,
-      }, {
-        params: {
-          userAccessKey: context.state.userAccessKey,
-        },
-      }).then((response) => {
-        context.commit('updateCartProductData', response.data.items);
-        context.commit('changeStatusCartItem', { status: false, offerCartId: productId });
-      }).catch(() => {
-        context.commit('changeStatusCartItem', { status: false, offerCartId: productId });
-      });
+      context.commit("changeStatusCartItem", { status: true, offerCartId: productId });
+      return axios
+        .put(
+          `${API_BASE_URL}/api/baskets/products`,
+          {
+            basketItemId: productId,
+            quantity: amount,
+          },
+          {
+            params: {
+              userAccessKey: context.state.userAccessKey,
+            },
+          }
+        )
+        .then((response) => {
+          context.commit("updateCartProductData", response.data.items);
+          context.commit("changeStatusCartItem", { status: false, offerCartId: productId });
+        })
+        .catch(() => {
+          context.commit("changeStatusCartItem", { status: false, offerCartId: productId });
+        });
     },
 
     async deleteProduct(context, offerCartId) {
-      context.commit('changeStatusCartItem', { status: true, offerCartId });
-      await fetch(`${API_BASE_URL}/api/baskets/products?userAccessKey=${context.state.userAccessKey}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json;charset=utf-8',
-        },
-        body: JSON.stringify({ basketItemId: offerCartId }),
-      }).then((r) => {
-        r.json().then((response) => {
-          context.commit('updateCartProductData', response.items);
+      context.commit("changeStatusCartItem", { status: true, offerCartId });
+      await fetch(
+        `${API_BASE_URL}/api/baskets/products?userAccessKey=${context.state.userAccessKey}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json;charset=utf-8",
+          },
+          body: JSON.stringify({ basketItemId: offerCartId }),
+        }
+      )
+        .then((r) => {
+          r.json().then((response) => {
+            context.commit("updateCartProductData", response.items);
+          });
+        })
+        .catch(() => {
+          context.commit("changeErrorCartLoading", {
+            textError: true,
+            status: "Что-то пошло не так...",
+          });
         });
-      }).catch(() => {
-        context.commit('changeErrorCartLoading', { textError: true, status: 'Что-то пошло не так...' });
-      });
-      context.commit('changeStatusCartItem', { status: false, offerCartId });
+      context.commit("changeStatusCartItem", { status: false, offerCartId });
     },
 
     loadOrderInfo(context, orderId) {
-      context.commit('changeStatusCartLoading', true);
-      return axios.get(`${API_BASE_URL}/api/orders/${orderId}`, {
-        params: {
-          userAccessKey: context.state.userAccessKey,
-        },
-      }).then((response) => {
-        console.log(response.data);
-        context.commit('updateOrderInfo', response.data);
-        context.commit('changeStatusCartLoading', false);
-      });
+      context.commit("changeStatusCartLoading", true);
+      return axios
+        .get(`${API_BASE_URL}/api/orders/${orderId}`, {
+          params: {
+            userAccessKey: context.state.userAccessKey,
+          },
+        })
+        .then((response) => {
+          console.log(response.data);
+          context.commit("updateOrderInfo", response.data);
+          context.commit("changeStatusCartLoading", false);
+        });
     },
-
   },
-
 });

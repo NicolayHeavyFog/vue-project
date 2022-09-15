@@ -4,45 +4,38 @@
       <span class="header__info" ref="textCatalog">Каталог</span>
 
       <a class="header__logo" href="#" ref="logo">
-        <img src="img/svg/logo-tech.svg" alt="Логотип интернет магазина Технозавррр" width="190" height="33">
+        <img
+          src="img/svg/logo-tech.svg"
+          alt="Логотип интернет магазина Технозавррр"
+          width="190"
+          height="33"
+        />
       </a>
 
-      <a class="header__tel" href="tel:8 800 600 90 09">
-        8 800 600 90 09
-      </a>
-      <CartIndicator/>
+      <a class="header__tel" href="tel:8 800 600 90 09"> 8 800 600 90 09 </a>
+      <CartIndicator />
     </div>
   </header>
 
-  <router-view :key="$route.fullPath" ref="main"/>
+  <router-view :key="$route.fullPath" ref="main" />
 
   <footer class="footer">
     <div class="footer__wrapper container" ref="footer">
       <ul class="footer__links">
         <li>
-          <a class="footer__link" href="#">
-            Каталог
-          </a>
+          <a class="footer__link" href="#"> Каталог </a>
         </li>
         <li>
-          <a class="footer__link" href="tel:88006009009">
-            8 800 600 90 09
-          </a>
+          <a class="footer__link" href="tel:88006009009"> 8 800 600 90 09 </a>
         </li>
         <li>
-          <a class="footer__link" href="mailto:hi@technozavrrr.com">
-            hi@technozavrrr.com
-          </a>
+          <a class="footer__link" href="mailto:hi@technozavrrr.com"> hi@technozavrrr.com </a>
         </li>
         <li>
-          <a class="footer__link" href="#">
-            Распродажа
-          </a>
+          <a class="footer__link" href="#"> Распродажа </a>
         </li>
         <li>
-          <a class="footer__link footer__link--medium" href="#">
-            Заказать звонок
-          </a>
+          <a class="footer__link footer__link--medium" href="#"> Заказать звонок </a>
         </li>
       </ul>
 
@@ -86,8 +79,8 @@
 
       <p class="footer__desc">
         Все права на&nbsp;материалы, находящиеся на&nbsp;сайте, охраняются в&nbsp;соответствии
-        с&nbsp;законодательством&nbsp;РФ,
-        в&nbsp;том числе об&nbsp;авторском праве и&nbsp;смежных правах.
+        с&nbsp;законодательством&nbsp;РФ, в&nbsp;том числе об&nbsp;авторском праве и&nbsp;смежных
+        правах.
       </p>
 
       <ul class="footer__data">
@@ -103,9 +96,7 @@
         </li>
       </ul>
 
-      <span class="footer__copyright">
-        © 2022 Технозавррр
-      </span>
+      <span class="footer__copyright"> © 2022 Технозавррр </span>
     </div>
   </footer>
   <div id="teleport-target"></div>
@@ -113,51 +104,28 @@
 </template>
 
 <script>
-import CartIndicator from '@/components/CartIndicator.vue';
-import { mapActions, mapMutations } from 'vuex';
+import CartIndicator from "@/components/CartIndicator.vue";
+import { mapActions, mapMutations } from "vuex";
 
 export default {
-  name: 'App',
+  name: "App",
   data() {
-    return {
-    };
+    return {};
   },
   components: { CartIndicator },
   methods: {
-    ...mapActions(['loadCart']),
-    ...mapMutations(['updateUserAccessKey']),
-    // animatePageIntro() {
-    //   return Promise.all([
-    //     this.animateArrayOfElements([
-    //       this.$refs.logo.$el,
-    //       this.$refs.main.$el,
-    //       this.$refs.textCatalog.$el,
-    //       this.$refs.footer.$el,
-    //     ]),
-    //   ]);
-    // },
-    // animateArrayOfElements(arrayOfElements) {
-    //   console.log('animate1');
-    //   return new Promise((resolve) => {
-    //     const timeline = gsap.timeline();
-    //     timeline.to(arrayOfElements, { duration: 1, opacity: 0, scale: 0.3 });
-    //     timeline.add(resolve);
-    //     // .from(arrayOfElements, { duration: 1.5, opacity: 0, scale: 0.3 })
-    //   });
-    // },
+    ...mapActions(["loadCart"]),
+    ...mapMutations(["updateUserAccessKey"]),
   },
-  // beforeRouteLeave(to, from, next) {
-  //   console.log(to, from);
-  //   this.animatePageIntro().then(next);
-  // },
+
   computed: {},
   created() {
-    const userAccessKey = localStorage.getItem('userAccessKey');
+    const userAccessKey = localStorage.getItem("userAccessKey");
     if (userAccessKey) {
       this.updateUserAccessKey(userAccessKey);
     }
     this.loadCart();
-    this.$store.dispatch('loadColors');
+    this.$store.dispatch("loadColors");
   },
 };
 </script>
